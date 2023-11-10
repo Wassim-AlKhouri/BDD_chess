@@ -33,5 +33,5 @@ Datum chessgame_in(PG_FUNCTION_ARGS)
 		boards[i] = cb;
 		i++;
 	}
-	free(str);
+	free(str);*/
 }
