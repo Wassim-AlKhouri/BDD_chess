@@ -26,7 +26,7 @@ typedef struct
     int halfMove;
     int fullMove;
 } FEN;
-
+    
 
 #define DatumGetSAN(X)  ((SAN *) DatumGetPointer(X))
 #define SANGetDatum(X)  PointerGetDatum(X)
