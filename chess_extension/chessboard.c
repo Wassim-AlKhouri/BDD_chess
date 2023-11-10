@@ -11,7 +11,7 @@ Datum chessboard_in(PG_FUNCTION_ARGS) {
 	char	*token;
 
 	//check if format FEN
-	chessboard *result = (chessboard *)palloc(sizeof(MyType));
+	chessboard *result = (chessboard *)palloc(sizeof(chessboard));
 	result->board = pstrdup(strtok(str, " "));
     result->color = *strtok(str, " ");
 	result->castling = pstrdup(strtok(str, " "));
