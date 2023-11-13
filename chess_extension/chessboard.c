@@ -21,16 +21,15 @@ chessboard_make(char* board, char color, char* castling, char* enpassant, int ha
 PG_FUNCTION_INFO_V1(chessboard_in);
 Datum chessboard_in(PG_FUNCTION_ARGS) {
     char	*str = PG_GETARG_CSTRING(0);
-	char	*token;
 
 	//check if format FEN
 	chessboard *result = (chessboard *)palloc(sizeof(chessboard));
 	result->board = pstrdup(strtok(str, " "));
-    result->color = *strtok(str, " ");
-	result->castling = pstrdup(strtok(str, " "));
-	result->enpassant = pstrdup(strtok(str, " "));
-	result->halfmove = atoi(strtok(str, " "));
-	result->fullmove = atoi(str);
+    result->color = *strtok(NULL, " ");
+	result->castling = pstrdup(strtok(NULL, " "));
+	result->enpassant = pstrdup(strtok(NULL, " "));
+	result->halfmove = atoi(strtok(NULL, " "));
+	result->fullmove = atoi(strtok(NULL, " "));
     PG_RETURN_POINTER(result);
 }
 
