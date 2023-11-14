@@ -35,6 +35,14 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
     char 	fenString[SCL_FEN_MAX_LENGTH];
 	char	**allboards = palloc(sizeof(char *) * (halfMovesNbr + 2));
     chessgame *result = (chessgame *)palloc(sizeof(chessgame));
+    int count = 0;
+    char *token = strtok(chgame->moves, " ");
+
+    while (token != NULL && count < halfMovesNbr) {
+        result->moves = pstrdup(token);
+        count++;
+        token = strtok(NULL, " ");
+    }
 
     while (i<halfMovesNbr)
     {
@@ -43,7 +51,6 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
         allboards[i] = pstrdup(strtok(fenString, " "));
         i++;
     }
-    result->moves = chgame->moves; //pas sur
     result->boards = allboards;
 
     return result 
