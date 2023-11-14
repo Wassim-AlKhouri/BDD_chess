@@ -31,30 +31,28 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
     SCL_recordInit(r);
     SCL_recordFromPGN(r, chgame->moves);
 
-    int i = 0;
-    char 	fenString[SCL_FEN_MAX_LENGTH];
-	char	**allboards = palloc(sizeof(char *) * (halfMovesNbr + 2));
     chessgame *result = (chessgame *)palloc(sizeof(chessgame));
-    int count = 0;
+    int i = 0;
+    int j = 0;
+    char fenString[SCL_FEN_MAX_LENGTH];
+	char **allboards = palloc(sizeof(char *) * (halfMovesNbr + 2));
     char *token = strtok(chgame->moves, " ");
 
-    while (token != NULL && count < halfMovesNbr) {
+    while (token != NULL && i < halfMovesNbr) {
         result->moves = pstrdup(token);
-        count++;
+        i++;
         token = strtok(NULL, " ");
     }
 
-    while (i<halfMovesNbr)
+    while (j<halfMovesNbr)
     {
-        SCL_recordApply(r, board, i);
+        SCL_recordApply(r, board, j);
         SCL_boardToFEN(board, fenstring);
-        allboards[i] = pstrdup(strtok(fenString, " "));
-        i++;
+        allboards[j] = pstrdup(strtok(fenString, " "));
+        j++;
     }
     result->boards = allboards;
 
     return result 
-
-
 }
 
