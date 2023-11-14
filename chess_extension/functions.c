@@ -56,3 +56,40 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
     return result 
 }
 
+bool hasOpening(chessgame comparator, chessgame game){
+ 
+    SCL_Record r1;
+    SCL_recordInit(r1);
+    SCL_recordFromPGN(r1, comparator->moves);
+ 
+    SCL_Record r2;
+    SCL_recordInit(r2);
+    SCL_recordFromPGN(r2, game->moves);
+ 
+    if
+    int nbMoves1 = SCL_recordLength(r1);
+    int nbMoves2 = SCL_recordLength(r2);
+ 
+    chessgame comparator_cut = getFirstMoves(comparator, nbMoves1);
+ 
+    if (strcmp(comparator_cut->moves, game->move) == 0){
+        return true;
+    }
+    else {return false}
+ 
+    pfree(comparator_cut->moves);
+    pfree(comparator_cut->boards);
+    pfree(comparator_cut);
+    
+}
+
+bool hasBoard(chessgame game, chessboard board, int halfMovesNbr) {
+    chessboard *result = getBoard(game, halfMovesNbr);
+    chessgame *firstMoves = getFirstMoves(game, halfMovesNbr);
+    for (int i = 0; i < halfMovesNbr; i++) {
+        if (strcmp(firstMoves->boards[i], result->board) == 0)
+            return true;
+    }
+    return false;
+}
+
