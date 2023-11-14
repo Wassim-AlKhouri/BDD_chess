@@ -31,12 +31,21 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
     SCL_recordInit(r);
     SCL_recordFromPGN(r, chgame->moves);
 
-
+    int i = 0;
+    char 	fenString[SCL_FEN_MAX_LENGTH];
+	char	**allboards = palloc(sizeof(char *) * (halfMovesNbr + 2));
     chessgame *result = (chessgame *)palloc(sizeof(chessgame));
-    
-    
 
-    
+    while (i<halfMovesNbr)
+    {
+        SCL_recordApply(r, board, i);
+        SCL_boardToFEN(board, fenstring);
+        allboards[i] = pstrdup(strtok(fenString, " "));
+        i++;
+    }
+    result->moves = chgame->moves; //pas sur
+    result->boards = allboards;
+
     return result 
 
 
