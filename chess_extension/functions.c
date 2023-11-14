@@ -4,7 +4,7 @@
 #include "fmgr.h"
 #include "utils/builtins.h"
 
- chessboard *getBoard(chessgame *chgame, int halfMovesNbr) {
+ chessboard getBoard(chessgame *chgame, int halfMovesNbr) {
     SCL_Record r;
     SCL_Board board;
     SCL_recordInit(r);
@@ -14,33 +14,47 @@
     
     char fenstring[SCL_FEN_MAX_LENGTH];
     SCL_boardToFEN(board, fenstring);
-    chessboard *result = (chessboard *)palloc(sizeof(chessboard));
-    result->board = pstrdup(strtok(fenString, " "));
-    result->color = fenstring[sttrlen(result->board) + 1];
-    result->castling = pstrdup(strtok(NULL, " "));
-    result->enpassant = pstrdup(strtok(NULL, " "));
-    result->halfMove = atoi(strtok(NULL, " "));
-    result->fullMove = atoi(strtok(NULL, " "));
+    chessboard result;
+    result.board = strtok(fenString, " ");
+    result.color = fenstring[sttrlen(result->board) + 1];
+    result.castling = strtok(NULL, " ");
+    result.enpassant = strtok(NULL, " ");
+    result.halfMove = strtok(NULL, " ");
+    result.fullMove = strtok(NULL, " ");
 
     return result;
 }
 
-chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
+chessgame getFirstMoves(chessgame chgame, int halfMovesNbr){
+    /*
+    char* buf = malloc(sizeof(char) * strlen(chgame.moves));
+    strcpy(buf, chgame.moves);
+    char    *ptr = chgame.moves;
+    for (int i = 0; i < halfMovesNbr / 2 + 1; i++)
+    {
+        ptr = strchr(ptr, '.') - 1; // 1 . e
+        
+        //buf = strtok(chessgame.moves, ".");
+    }
+    
+    len = ptr - chgame.moves;
+    */
+
     SCL_Record r;
     SCL_Board board;
     SCL_recordInit(r);
-    SCL_recordFromPGN(r, chgame->moves);
-
-    chessgame *result = (chessgame *)palloc(sizeof(chessgame));
+    SCL_recordFromPGN(r, chgame.moves);
+    
+    chessgame result; 
     int i = 0;
     int j = 0;
     char fenString[SCL_FEN_MAX_LENGTH];
 	char **allboards = palloc(sizeof(char *) * (halfMovesNbr + 2));
     char *token = strtok(chgame->moves, " ");
-
-    while (token != NULL && i < halfMovesNbr) {
+    // garder les n premiers, à faire
+    while (token != NULL && i < halfMovesNbr + 1) {
+        i+= 1 + i%2;
         result->moves = pstrdup(token);
-        i++;
         token = strtok(NULL, " ");
     }
 
@@ -48,10 +62,12 @@ chessgame *getFirstMoves(chessgame *chgame, int halfMovesNbr){
     {
         SCL_recordApply(r, board, j);
         SCL_boardToFEN(board, fenstring);
-        allboards[j] = pstrdup(strtok(fenString, " "));
+        allboards[j] = strtok(fenString, " ");
         j++;
     }
-    result->boards = allboards;
+    result.boards = allboards;
+    
+    result->moves = SCL_printPGN(r,);
 
     return result 
 }
@@ -66,28 +82,26 @@ bool hasOpening(chessgame comparator, chessgame game){
     SCL_recordInit(r2);
     SCL_recordFromPGN(r2, game->moves);
  
-    if
-    int nbMoves1 = SCL_recordLength(r1);
-    int nbMoves2 = SCL_recordLength(r2);
+    int nbMoves_game = SCL_recordLength(r2);
+    
+    chessgame *comparator_cut = getFirstMoves(comparator, nbMoves1);
  
-    chessgame comparator_cut = getFirstMoves(comparator, nbMoves1);
- 
-    if (strcmp(comparator_cut->moves, game->move) == 0){
+    if (strcmp(comparator_cut->moves, game->moves) == 0){
+        pfree(comparator_cut->moves);
+        pfree(comparator_cut->boards);
+        pfree(comparator_cut);
         return true;
     }
-    else {return false}
+    return false;
  
-    pfree(comparator_cut->moves);
-    pfree(comparator_cut->boards);
-    pfree(comparator_cut);
+    
     
 }
 
 bool hasBoard(chessgame game, chessboard board, int halfMovesNbr) {
-    chessboard *result = getBoard(game, halfMovesNbr);
     chessgame *firstMoves = getFirstMoves(game, halfMovesNbr);
     for (int i = 0; i < halfMovesNbr; i++) {
-        if (strcmp(firstMoves->boards[i], result->board) == 0)
+        if (strcmp(firstMoves->boards[i], board) == 0)
             return true;
     }
     return false;
