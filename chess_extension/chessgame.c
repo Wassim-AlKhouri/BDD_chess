@@ -11,11 +11,10 @@ static char **generateboards(char *moves)
 	SCL_Board	board;
 	SCL_recordInit(r);
     SCL_recordFromPGN(r, moves);
-
 	int		i = 0;
 	int		nb_move = SCL_recordLength(r);
 	char 	fenString[SCL_FEN_MAX_LENGTH];
-	char	**allboards = palloc(sizeof(char *) * (nb_moves + 1));
+	char	**allboards = palloc(sizeof(char *) * (nb_move + 2));
 
 	while(i < nb_move)
 	{
@@ -36,7 +35,7 @@ Datum chessgame_in(PG_FUNCTION_ARGS)
 	
 	result->moves = pstrdup(str);
 	result->boards = generateboards(result->moves);
-	return (result);
+	PG_RETURN_chessgame_P(result);
 }
 
 PG_FUNCTION_INFO_V1(chessgame_out);
