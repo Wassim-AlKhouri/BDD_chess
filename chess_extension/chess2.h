@@ -11,17 +11,19 @@ typedef	struct
 
 typedef	struct
 {
-	int		index;
 	char	*moves;
 	char	**boards;
 } chessgame;
 
-#define DatumGetchessboard(X)  ((chessboard *) DatumGetPointer(X))
-#define chessboardGetDatum(X)  PointerGetDatum(X)
-#define PG_GETARG_chessboard(n) DatumGetchessboard(PG_GETARG_DATUM(n))
-#define PG_RETURN_chessboard(x) return chessboardGetDatum(x)
+#define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
+#define chessboardPGetDatum(X)  PointerGetDatum(X)
+#define PG_GETARG_CHESSBOARD_P(n) DatumGetchessboardP(PG_GETARG_DATUM(n))
+#define PG_RETURN_CHESSBOARD_P(x) return chessboardPGetDatum(x)
 
-#define DatumGetchessgame(X)  ((chessgame *) DatumGetPointer(X))
-#define chessgameGetDatum(X)  PointerGetDatum(X)
-#define PG_GETARG_chessgame(n) DatumGetSAN(PG_GETARG_DATUM(n))
-#define PG_RETURN_chessgame(x) return SANGetDatum(x)
+#define DatumGetchessgameP(X)  ((chessgame *) DatumGetPointer(X))
+#define ChessgamePGetDatum(X)  PointerGetDatum(X)
+#define PG_GETARG_CHESSGAME_P(n) DatumGetchessgameP(PG_GETARG_DATUM(n))
+#define PG_RETURN_CHESSGAME_P(x) return ChessgamePGetDatum(x)
+
+
+PG_MODULE_MAGIC;

@@ -1,0 +1,13 @@
+MODULE_big	= chess
+OBJS = \
+	$(WIN32RES) \
+	chessgame.o \
+	chessboard.o
+
+EXTENSION   = chess
+DATA        = chess--1.0.sql
+HEADERS_chess = chess2.h
+
+PG_CONFIG ?= pg_config
+PGXS = $(shell $(PG_CONFIG) --pgxs)
+include $(PGXS)

@@ -2,6 +2,7 @@
 #include "fmgr.h"
 #include "utils/builtins.h"
 #include "chess2.h"
+#include "libpq/pqformat.h"
 #include <string.h>
 
 static chessboard *
@@ -30,19 +31,19 @@ Datum chessboard_in(PG_FUNCTION_ARGS) {
 	result->enpassant = pstrdup(strtok(NULL, " "));
 	result->halfmove = atoi(strtok(NULL, " "));
 	result->fullmove = atoi(strtok(NULL, " "));
-    PG_RETURN_POINTER(result);
+    PG_RETURN_CHESSBOARD_P(result);
 }
 
 PG_FUNCTION_INFO_V1(chessboard_out);
 Datum chessboard_out(PG_FUNCTION_ARGS){
-	chessboard *c = (chessboard *)PG_GETARG_POINTER(0);
+	chessboard *c = (chessboard *)PG_GETARG_CHESSBOARD_P(0);
 	char *result = psprintf("%s %c %s %s %d %d", c->board, c->color, c->castling, c->enpassant, c->halfmove, c->fullmove);
 	PG_RETURN_CSTRING(result);
 }
 
 PG_FUNCTION_INFO_V1(chessboard_recv);
 Datum chessboard_recv(PG_FUNCTION_ARGS){
-	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
+	StringInfo	buf = (StringInfo) PG_GETARG_CHESSBOARD_P(0);
 	chessboard *result = (chessboard *)palloc(sizeof(chessboard));
 	result->board = pstrdup(pq_getmsgstring(buf));
 	result->color = *pq_getmsgstring(buf);
@@ -55,15 +56,15 @@ Datum chessboard_recv(PG_FUNCTION_ARGS){
 
 PG_FUNCTION_INFO_V1(chessboard_send);
 Datum chessboard_send(PG_FUNCTION_ARGS){
-	chessboard *cb = PG_GETARG_chessboard(0);
+	chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
 	StringInfoData buf;
 	pq_begintypsend(&buf);
-	pq_sendstring(*buf, cb->board);
-	pq_sendchar(*buf, cb->color);
-	pq_sendstring(*buf, cb->castling);
-	pq_sendstring(*buf, cb->enpassant);
-	pq_sendint(*buf, cb->halfmove);
-	pq_sendint(*buf, cb->fullmove);
+	pq_sendstring(&buf, cb->board);
+	pq_sendint64(&buf, cb->color);
+	pq_sendstring(&buf, cb->castling);
+	pq_sendstring(&buf, cb->enpassant);
+	pq_sendint64(&buf, cb->halfmove);
+	pq_sendint64(&buf, cb->fullmove);
 	PG_FREE_IF_COPY(cb, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
@@ -87,9 +88,9 @@ Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 }
 
 PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
-Datum complex_cast_to_text(PG_FUNCTION_ARGS)
+Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
 {
-  chessboard *cb = PG_GETARG_POINTER(0);
+  chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
   char *result = psprintf("%s %c %s %s %d %d", cb->board, cb->color, cb->castling, cb->enpassant, cb->halfmove, cb->fullmove);
   PG_RETURN_CSTRING(result);
 }
@@ -100,11 +101,11 @@ PG_FUNCTION_INFO_V1(chessboard_constructor);
 Datum
 chessboard_constructor(PG_FUNCTION_ARGS)
 {
-  char* board = PG_GETARG_STRING(0);
+  char* board = PG_GETARG_CSTRING(0);
   char color = PG_GETARG_CHAR(1);
-  char *castling = PG_GETARG_STRING(2);
-  char *enpassant = PG_GETARG_STRING(3);
-  int halfmove = PG_GETARG_INT(4);
-  int fullmove = PG_GETARG_INT(5);
+  char *castling = PG_GETARG_CSTRING(2);
+  char *enpassant = PG_GETARG_CSTRING(3);
+  int halfmove = PG_GETARG_INT64(4);
+  int fullmove = PG_GETARG_INT64(5);
   PG_RETURN_CHESSBOARD_P(chessboard_make(board, color, castling, enpassant, halfmove, fullmove));
 }

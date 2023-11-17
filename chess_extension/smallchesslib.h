@@ -6,7 +6,7 @@
 
   Small and simple single header C99 public domain chess library and engine.
 
-  author: Miloslav Ciz (drummyfish)
+  author:F Miloslav Ciz (drummyfish)
   license: CC0 1.0 (public domain)
            found at https://creativecommons.org/publicdomain/zero/1.0/
            + additional waiver of all IP
