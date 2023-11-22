@@ -46,6 +46,16 @@ CREATE OR REPLACE FUNCTION text(chessboard)
 
 CREATE CAST (text as chessboard) WITH FUNCTION chessboard(text) AS IMPLICIT;
 CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard);
+
+/******************************************************************************
+ * Constructor
+ ******************************************************************************/
+
+CREATE FUNCTION chessboard(text, char, text, text, integer, integer)
+  RETURNS chessboard
+  AS 'MODULE_PATHNAME', 'chessboard_constructor'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
 /*****************************************************************************/
 
 CREATE OR REPLACE FUNCTION chessgame_in(cstring)
@@ -76,6 +86,15 @@ CREATE TYPE chessgame (
   send           = chessgame_send,
   alignment      = double
 );
+
+/******************************************************************************
+ * Constructor
+ ******************************************************************************/
+
+CREATE FUNCTION chessgame(text, array)
+  RETURNS chessgame
+  AS 'MODULE_PATHNAME', 'chessgame_constructor'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 /*****************************************************************************
   * GIN
