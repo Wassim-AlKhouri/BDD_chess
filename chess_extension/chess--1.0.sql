@@ -65,4 +65,19 @@ CREATE TYPE chessgame (
   alignment      = double
 );
 
-/*****************************************************************************/
+/*****************************************************************************
+  * GIN
+  *****************************************************************************/
+
+  /* Support function */
+  CREATE OR REPLACE FUNCTION gin_extract_board_states(chessgame)
+  RETURNS text[]
+  AS 'MODULE_PATHNAME'
+  LANGUAGE C IMMUTABLE PARALLEL SAFE;
+
+  /* Operator class */
+  CREATE OPERATOR CLASS gin_chessgame_ops
+  DEFAULT FOR TYPE chess_game USING gin
+  AS
+    OPERATOR        1       &&,
+    FUNCTION        1       gin_extract_board_states(chess_game);

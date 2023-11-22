@@ -2,7 +2,8 @@ MODULE_big	= chess
 OBJS = \
 	$(WIN32RES) \
 	chessgame.o \
-	chessboard.o
+	chessboard.o \
+	chess_gin.o \
 
 EXTENSION   = chess
 DATA        = chess--1.0.sql
