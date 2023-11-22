@@ -24,7 +24,7 @@ gin_extract_board_states(PG_FUNCTION_ARGS)
         TEXTOID,            // element type       
         sizeof(char *),                
         true,               // contains nulls
-        'i'                 // alignment ('i' = int)       
+        'c'                 // alignment ('i' = int)       
     );
     PG_RETURN_ARRAYTYPE_P(result);
 }
