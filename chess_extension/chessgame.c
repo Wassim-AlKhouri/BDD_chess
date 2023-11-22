@@ -95,3 +95,10 @@ Datum chessgame_send(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(game, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
+
+PG_FUNCTION_INFO_V1(chessgame_constructor);
+Datum chessgame_constructor(PG_FUNCTION_ARGS)
+{
+	char		*moves = PG_GETARG_CSTRING(0);
+	PG_RETURN_CHESSGAME_P(chessgame_make(str));
+}
