@@ -1,46 +1,34 @@
+#include "smallchesslib.h"
+#include "postgres.h"
+#include "fmgr.h"
+#include "utils/builtins.h"
+#include "libpq/pqformat.h"
+PG_MODULE_MAGIC;
 
-
-typedef struct
+typedef	struct
 {
-    int index;
-    char *move;
-} SAN;
+	int		length;
+	const char	*board;
+	/* char	color;
+	char	*castling;
+	char	*enpassant;
+	int		halfmove;
+	int		fullmove; */
 
-typedef struct 
+} chessboard;
+
+typedef	struct
 {
-    char* event;
-    char* site;
-    char* date;
-    char* round;
-    char* white;
-    char* black;
-    char* result;
-} PGN;
+	int		length;
+	const char 	*moves;
+} chessgame;
 
-typedef struct 
-{
-    char* board;
-    char* color;
-    char* castling;
-    char* enpassant;
-    int halfMove;
-    int fullMove;
-} FEN;
-    
+#define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
+#define chessboardPGetDatum(X)  PointerGetDatum(X)
+#define PG_GETARG_CHESSBOARD_P(n) DatumGetchessboardP(PG_GETARG_DATUM(n))
+#define PG_RETURN_CHESSBOARD_P(x) return chessboardPGetDatum(x)
 
-#define DatumGetSAN(X)  ((SAN *) DatumGetPointer(X))
-#define SANGetDatum(X)  PointerGetDatum(X)
-#define PG_GETARG_SAN(n) DatumGetSAN(PG_GETARG_DATUM(n))
-#define PG_RETURN_SAN(x) return SANGetDatum(x)
-
-#define DatumGetPGN(X)  ((PGN *) DatumGetPointer(X))
-#define PGNGetDatum(X)  PointerGetDatum(X)
-#define PG_GETARG_PGN(n) DatumGetPGN(PG_GETARG_DATUM(n))
-#define PG_RETURN_PGN(x) return PGNGetDatum(x)
-
-#define DatumGetFEN(X)  ((FEN *) DatumGetPointer(X))
-#define FENGetDatum(X)  PointerGetDatum(X)
-#define PG_GETARG_FEN(n) DatumGetFEN(PG_GETARG_DATUM(n))
-#define PG_RETURN_FEN(x) return FENGetDatum(x)
-
-
+#define DatumGetchessgameP(X)  ((chessgame *) DatumGetPointer(X))
+#define ChessgamePGetDatum(X)  PointerGetDatum(X)
+#define PG_GETARG_CHESSGAME_P(n) DatumGetchessgameP(PG_GETARG_DATUM(n))
+#define PG_RETURN_CHESSGAME_P(x) return ChessgamePGetDatum(x)

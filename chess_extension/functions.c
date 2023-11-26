@@ -1,4 +1,4 @@
-#include "chess2.h"
+#include "chess.h"
 #include "smallchesslib.h"
 #include "postgres.h"
 #include "fmgr.h"
