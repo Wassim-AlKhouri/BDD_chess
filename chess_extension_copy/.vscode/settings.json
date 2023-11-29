@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "builtins.h": "c",
+        "postgres.h": "c",
+        "pqformat.h": "c"
+    }
+}
