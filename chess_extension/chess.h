@@ -1,9 +1,11 @@
-#include "smallchesslib.h"
-#include "postgres.h"
-#include "fmgr.h"
-#include "utils/builtins.h"
-#include "libpq/pqformat.h"
-PG_MODULE_MAGIC;
+
+//#include "smallchesslib.h"
+# include "postgres.h"
+# include "fmgr.h"
+# include "utils/builtins.h"
+# include "libpq/pqformat.h"
+
+
 
 typedef	struct
 {

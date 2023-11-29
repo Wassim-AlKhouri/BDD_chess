@@ -1,5 +1,12 @@
+/* #ifndef CHESS_H
+#define CHESS_H */
 #include "chess.h"
-
+//PG_MODULE_MAGIC;
+/* #include "smallchesslib.h"
+#include "postgres.h"
+#include "fmgr.h"
+#include "utils/builtins.h"
+#include "libpq/pqformat.h" */
 /* static chessboard *
 chessboard_make(char* board, char color, char* castling, char* enpassant, int halfmove, int fullmove){
 	chessboard *cb = palloc0(sizeof(chessboard));
@@ -13,7 +20,7 @@ chessboard_make(char* board, char color, char* castling, char* enpassant, int ha
 } */
 static chessboard *
 chessboard_make(char* board){
-	chessboard *cb = palloc0(sizeof(int) + sizeof(char) * (strlen(board) + 1));
+	chessboard *cb = palloc0(sizeof(chessboard));
 	cb->length = strlen(board);
 	cb->board = pstrdup(board);
 	return cb;
@@ -69,6 +76,8 @@ Datum chessboard_out(PG_FUNCTION_ARGS){
 PG_FUNCTION_INFO_V1(chessboard_out);
 Datum chessboard_out(PG_FUNCTION_ARGS){
 	chessboard *c = (chessboard *)PG_GETARG_CHESSBOARD_P(0);
+	char *result = psprintf("%s", c->board);
+	PG_FREE_IF_COPY(c, 0);
 	PG_RETURN_CSTRING(c->board);
 }
 
@@ -115,14 +124,14 @@ Datum chessboard_send(PG_FUNCTION_ARGS){
 	chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
 	StringInfoData buf;
 	pq_begintypsend(&buf);
-	pq_sendint(&buf, cb->length, sizeof(int));
+	//pq_sendint(&buf, cb->length, sizeof(int));
 	pq_sendstring(&buf, cb->board);
 	PG_FREE_IF_COPY(cb, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
 
-PG_FUNCTION_INFO_V1(chessboard_cast_from_text);
+/* PG_FUNCTION_INFO_V1(chessboard_cast_from_text);
 Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 {  	
 	text *txt = PG_GETARG_TEXT_P(0);
@@ -131,7 +140,7 @@ Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 	
     PG_RETURN_POINTER(chessboard_parse(str)); 
 
-}
+} */
 
 /* PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
 Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
@@ -141,12 +150,13 @@ Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
   PG_RETURN_CSTRING(result);
 } */
 
-PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
+/* PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
 Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
 {
   chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
   PG_RETURN_CSTRING(cb->board);
-}
+} */
 
 ///////////////
-
+/* #endif
+ */

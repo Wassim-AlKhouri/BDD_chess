@@ -34,7 +34,7 @@ CREATE TYPE chessboard (
   alignment      = double
 );
 
-CREATE OR REPLACE FUNCTION chessboard(text)
+/* CREATE OR REPLACE FUNCTION chessboard(text)
   RETURNS chessboard
   AS 'MODULE_PATHNAME', 'chessboard_cast_from_text'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -45,13 +45,13 @@ CREATE OR REPLACE FUNCTION text(chessboard)
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE CAST (text as chessboard) WITH FUNCTION chessboard(text) AS IMPLICIT;
-CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard);
+CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard); */
 
 /******************************************************************************
  * Constructor
  ******************************************************************************/
 
-CREATE FUNCTION chessboard(text, char, text, text, integer, integer)
+CREATE FUNCTION chessboard(text)
   RETURNS chessboard
   AS 'MODULE_PATHNAME', 'chessboard_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -87,11 +87,24 @@ CREATE TYPE chessgame (
   alignment      = double
 );
 
+/* CREATE OR REPLACE FUNCTION chessgame(text)
+  RETURNS chessgame
+  AS 'MODULE_PATHNAME', 'chessgame_cast_from_text'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE OR REPLACE FUNCTION text(chessgame)
+  RETURNS text
+  AS 'MODULE_PATHNAME', 'chessgame_cast_to_text'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE CAST (text as chessgame) WITH FUNCTION chessgame(text) AS IMPLICIT;
+CREATE CAST (chessgame as text) WITH FUNCTION text(chessgame);
+ */
 /******************************************************************************
  * Constructor
  ******************************************************************************/
 
-CREATE FUNCTION chessgame(text, array)
+CREATE FUNCTION chessgame(text)
   RETURNS chessgame
   AS 'MODULE_PATHNAME', 'chessgame_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -101,7 +114,7 @@ CREATE FUNCTION chessgame(text, array)
   *****************************************************************************/
 
   /* Support function */
-  CREATE OR REPLACE FUNCTION gin_extract_board_states(chessgame)
+ /*  CREATE OR REPLACE FUNCTION gin_extract_board_states(chessgame)
   RETURNS text[]
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE PARALLEL SAFE;
@@ -111,12 +124,12 @@ CREATE FUNCTION chessgame(text, array)
   DEFAULT FOR TYPE chess_game USING gin
   AS
     OPERATOR        1       &&,
-    FUNCTION        1       gin_extract_board_states(chess_game);
+    FUNCTION        1       gin_extract_board_states(chess_game); */
     
-/******************************************************************************
+/******************************************************************************/
 /* B-Tree comparison functions */
 
-CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
+/* CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -139,14 +152,14 @@ CREATE OR REPLACE FUNCTION chessgame_abs_gt(chessgame, chessgame)
 CREATE OR REPLACE FUNCTION chessgame_abs_ge(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
 
 
 /******************************************************************************/
 
 /* B-Tree comparison operators */
 
-CREATE OPERATOR = (
+/* CREATE OPERATOR = (
   LEFTARG = chessgame, RIGHTARG = chessgame,
   PROCEDURE = chessgame_abs_eq,
   COMMUTATOR = =, NEGATOR = <>
@@ -170,22 +183,22 @@ CREATE OPERATOR > (
   LEFTARG = chessgame, RIGHTARG = chessgame,
   PROCEDURE = chessgame_abs_gt,
   COMMUTATOR = <, NEGATOR = <=
-);
+); */
 
 /******************************************************************************/
 
 /* B-Tree support function */
 
-CREATE OR REPLACE FUNCTION chessgame_abs_cmp(chessgame, chessgame)
+/* CREATE OR REPLACE FUNCTION chessgame_abs_cmp(chessgame, chessgame)
   RETURNS integer
   AS 'MODULE_PATHNAME'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
 
 /******************************************************************************/
 
 /* B-Tree operator class */
 
-CREATE OPERATOR CLASS chessgame_abs_ops
+/* CREATE OPERATOR CLASS chessgame_abs_ops
 DEFAULT FOR TYPE chessgame USING btree
 AS
         OPERATOR        1       <  ,
@@ -193,6 +206,6 @@ AS
         OPERATOR        3       =  ,
         OPERATOR        4       >= ,
         OPERATOR        5       >  ,
-        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame);
+        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame); */
 
 /******************************************************************************/
