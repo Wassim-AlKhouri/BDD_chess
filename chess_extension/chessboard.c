@@ -2,7 +2,7 @@
 
 static chessboard *
 chessboard_make(char* FEN_board){
-	if (FEN_board == NULL)
+	//if (FEN_board == NULL)
 		//throw exception
 	chessboard *cb = palloc0(sizeof(chessboard) + strlen(FEN_board));
 	if (cb == NULL)
@@ -13,8 +13,13 @@ chessboard_make(char* FEN_board){
 }
 
 static chessboard *
-chessboard_parse(char* board){
-	return(chessboard_make(board));
+chessboard_parse(char* FEN_board){
+	SCL_board	sclboard;
+
+	if (SCL_boardFrom(sclboard, FEN_board) == 0)
+		ereport(ERROR, (errcode(NOT_FEN, errmsg("not a fen representation"))));
+	return(chessboard_make(FEN_board));
+	
 }
 ////////////////
 

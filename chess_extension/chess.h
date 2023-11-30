@@ -1,10 +1,9 @@
 
-//#include "smallchesslib.h"
-# include "postgres.h"
-# include "fmgr.h"
-# include "utils/builtins.h"
-# include "libpq/pqformat.h"
-
+#include "postgres.h"
+#include "fmgr.h"
+#include "utils/builtins.h"
+#include "libpq/pqformat.h"
+#include "smallchesslib.h"
 
 
 typedef	struct
