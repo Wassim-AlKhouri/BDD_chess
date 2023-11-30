@@ -9,20 +9,14 @@
 
 typedef	struct
 {
-	int		length;
-	const char	*board;
-	/* char	color;
-	char	*castling;
-	char	*enpassant;
-	int		halfmove;
-	int		fullmove; */
-
+	int32	vl_len_;
+	char	board[FLEXIBLE_ARRAY_MEMBER];
 } chessboard;
 
 typedef	struct
 {
-	int		length;
-	const char 	*moves;
+	int32 vl_len_;
+	char moves[FLEXIBLE_ARRAY_MEMBER];
 } chessgame;
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))

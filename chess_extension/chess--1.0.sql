@@ -26,7 +26,7 @@ CREATE OR REPLACE FUNCTION chessboard_send(chessboard)
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE TYPE chessboard (
-  /*internallength = 16,	to change*/
+  internallength = VARIABLE,
   input          = chessboard_in,
   output         = chessboard_out,
   receive        = chessboard_recv,
@@ -79,7 +79,7 @@ CREATE OR REPLACE FUNCTION chessgame_send(chessgame)
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE TYPE chessgame (
-  /*internallength = 16,	to change*/
+  internallength = VARIABLE,
   input          = chessgame_in,
   output         = chessgame_out,
   receive        = chessgame_recv,

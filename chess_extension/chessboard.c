@@ -1,28 +1,14 @@
-/* #ifndef CHESS_H
-#define CHESS_H */
 #include "chess.h"
-//PG_MODULE_MAGIC;
-/* #include "smallchesslib.h"
-#include "postgres.h"
-#include "fmgr.h"
-#include "utils/builtins.h"
-#include "libpq/pqformat.h" */
-/* static chessboard *
-chessboard_make(char* board, char color, char* castling, char* enpassant, int halfmove, int fullmove){
-	chessboard *cb = palloc0(sizeof(chessboard));
-	cb->board = board;
-	cb->color = color;
-	cb->castling = castling;
-	cb->enpassant = enpassant;
-	cb->halfmove = halfmove;
-	cb->fullmove = fullmove;
-	return cb;
-} */
+
 static chessboard *
-chessboard_make(char* board){
-	chessboard *cb = palloc0(sizeof(chessboard));
-	cb->length = strlen(board);
-	cb->board = pstrdup(board);
+chessboard_make(char* FEN_board){
+	if (FEN_board == NULL)
+		//throw exception
+	chessboard *cb = palloc0(sizeof(chessboard) + strlen(FEN_board));
+	if (cb == NULL)
+		ereport(ERROR, (errcode(ERRCODE_OUT_OF_MEMORY), errmsg("out of memory")));
+	SET_VARSIZE(cb, VARHDRSZ + strlen(FEN_board));
+	memcpy(cb->board, FEN_board, strlen(FEN_board));
 	return cb;
 }
 
@@ -52,18 +38,18 @@ PG_FUNCTION_INFO_V1(chessboard_constructor);
 Datum
 chessboard_constructor(PG_FUNCTION_ARGS)
 {
-  char* board = PG_GETARG_CSTRING(0);
-  PG_RETURN_CHESSBOARD_P(chessboard_parse(board));
+	text *input = PG_GETARG_TEXT_P(0);
+	if (input != NULL) {
+		const char *cb = text_to_cstring(input);
+		PG_RETURN_BOARD_P(chessboard_parse(text_to_cstring(input)));
+	}
+	else
+		PG_RETURN_NULL();
 }
 
 PG_FUNCTION_INFO_V1(chessboard_in);
 Datum chessboard_in(PG_FUNCTION_ARGS) {
     char	*str = PG_GETARG_CSTRING(0);
-
-	//check if format FEN
-	/* chessboard *result = (chessboard *)palloc(sizeof(int) + sizeof(char) * (strlen(str) + 1));
-	result->length = strlen(str);
-	result->board = pstrdup(str); */
     PG_RETURN_CHESSBOARD_P(chessboard_parse(str));
 }
 
@@ -96,41 +82,24 @@ Datum chessboard_recv(PG_FUNCTION_ARGS){
 
 PG_FUNCTION_INFO_V1(chessboard_recv);
 Datum chessboard_recv(PG_FUNCTION_ARGS){
-	StringInfo	buf = (StringInfo) PG_GETARG_CHESSBOARD_P(0);
-	/* chessboard *result = (chessboard *) palloc(sizeof(int) + sizeof(char) * (strlen(str) + 1));
-	result->length = pq_gesmsgint(buf, sizeof(int));
-	result->board = pstrdup(pq_getmsgstring(buf)); */
-	const char *board = pq_getmsgstring(buf);
-	PG_RETURN_CHESSBOARD_P(chessboard_parse(board));
+	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
+	int	nbytes;
+	const int length = pq_getmsgint64(buf);
+	const char *recv_char = pq_getmsgtext(buf, length, &nbytes);
+	PG_RETURN_CHESSBOARD_P(chessboard_parse(recv_char));
 }
-
-/* PG_FUNCTION_INFO_V1(chessboard_send);
-Datum chessboard_send(PG_FUNCTION_ARGS){
-	chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
-	StringInfoData buf;
-	pq_begintypsend(&buf);
-	pq_sendstring(&buf, cb->board);
-	pq_sendint64(&buf, cb->color);
-	pq_sendstring(&buf, cb->castling);
-	pq_sendstring(&buf, cb->enpassant);
-	pq_sendint64(&buf, cb->halfmove);
-	pq_sendint64(&buf, cb->fullmove);
-	PG_FREE_IF_COPY(cb, 0);
-	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
-} */
 
 PG_FUNCTION_INFO_V1(chessboard_send);
 Datum chessboard_send(PG_FUNCTION_ARGS){
-	chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
+	chessboard	*cb = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
 	StringInfoData buf;
 	pq_begintypsend(&buf);
-	//pq_sendint(&buf, cb->length, sizeof(int));
-	pq_sendstring(&buf, cb->board);
+	int nchars = strlen(cb->board);
+	pq_sendint64(&buf, nchars);
+	pq_sendtext(&buf, cb->board, nchars);
 	PG_FREE_IF_COPY(cb, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
-
-
 /* PG_FUNCTION_INFO_V1(chessboard_cast_from_text);
 Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 {  	
