@@ -10,19 +10,30 @@
     SCL_recordInit(r);
     SCL_recordFromPGN(r, chgame->moves);
 
+    if (half_moves < 0){
+        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+    if (half_moves > SCL_recordLength(r)){
+        ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+
     SCL_recordApply(r, board, halfMovesNbr);
     
     char fenstring[SCL_FEN_MAX_LENGTH];
-    SCL_boardToFEN(board, fenstring);
-    chessboard result;
-    result.board = strtok(fenString, " ");
+    //SCL_boardToFEN(board, fenstring);
+    chessboard result ;
+    result.board = board;
+
+    /* result.board = strtok(fenString, " ");
     result.color = fenstring[sttrlen(result->board) + 1];
     result.castling = strtok(NULL, " ");
     result.enpassant = strtok(NULL, " ");
     result.halfMove = strtok(NULL, " ");
-    result.fullMove = strtok(NULL, " ");
+    result.fullMove = strtok(NULL, " "); */
 
-    return result;
+
+    return result; 
+
+
+
 }
 
 chessgame getFirstMoves(chessgame chgame, int halfMovesNbr){
