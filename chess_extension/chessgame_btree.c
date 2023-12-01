@@ -13,7 +13,7 @@
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 
-#include "chess2.h"
+#include "chess.h"
 
 static int
 chessgame_abs_cmp_internal(chessgame *a, chessgame *b)
@@ -28,10 +28,13 @@ chessgame_abs_cmp_internal(chessgame *a, chessgame *b)
     SCL_recordFromPGN(r2, b->moves);
     int nbMoves_game2 = SCL_recordLength(r2);
 
-
-    if (nbMoves_game1 < nbMoves_game2){return -1;}
-    else if (nbMoves_game1 > nbMoves_game2){return 1;}
-    else{return (strcmp(a->moves, b->moves))};
+    int result = strncmp(a->moves, b->moves, Min(nbMoves_game1, nbMoves_game2));
+    if (result == 0){
+        if (nbMoves_game1 < nbMoves_game2){return -1;}
+        else if (nbMoves_game1 > nbMoves_game2){return 1;}
+        else{return 0;}
+    }
+    else{return result;}
 }
 
 
