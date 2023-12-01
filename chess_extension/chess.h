@@ -1,4 +1,5 @@
-
+#ifndef CHESS_H
+# define CHESS_H
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
@@ -27,3 +28,4 @@ typedef	struct
 #define ChessgamePGetDatum(X)  PointerGetDatum(X)
 #define PG_GETARG_CHESSGAME_P(n) DatumGetchessgameP(PG_GETARG_DATUM(n))
 #define PG_RETURN_CHESSGAME_P(x) return ChessgamePGetDatum(x)
+#endif
