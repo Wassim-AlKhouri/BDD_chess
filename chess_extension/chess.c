@@ -1,6 +1,96 @@
 #include "chess.h"
 PG_MODULE_MAGIC;
 
+//*************************************CHESSGAME*************************************
+
+//************INTERNAL FUNCTIONS************
+static bool isValidPawnMove(char* move){
+	if (move[0] >= 'a' && move[0] <= 'h' && move[1] >= '1' && move[1] <= '8'){
+			if (strlen(move) == 4 && move[2] == '=' && 
+				(move[3] == 'Q' || move[3] == 'R' || move[3] == 'B' || move[3] == 'N')) {
+				
+				return true; // Valid promotion
+				}
+			else if (strlen(move) == 2) return true; // Valid move
+	}
+	return false; //Invalid move
+}
+
+static bool isValidPieceMove(char* move) {
+    if ((move[0] == 'K' || move[0] == 'Q' || move[0] == 'R' || move[0] == 'B' || move[0] == 'N') &&
+        move[1] >= 'a' && move[1] <= 'h' &&
+        move[2] >= '1' && move[2] <= '8') {
+        
+        if (strlen(move) == 5 && move[3] == 'x' &&
+            move[4] >= 'a' && move[4] <= 'h' &&
+            move[5] >= '1' && move[5] <= '8') {
+            return true;  // Valid capture
+        }
+
+        return strlen(move) == 3;  // Valid non-capture
+    }
+
+    return false;  // Invalid move
+}
+
+static bool isValidCastle(const char* move) {
+    if (strlen(move) == 5 && strncmp(move, "O-O-O", 5) == 0) return true;  // Valid kingside castle
+    else if (strlen(move) == 3 && strncmp(move, "O-O", 3) == 0) return true;  // Valid queenside castle
+    return false;  // Invalid move
+}
+
+static bool isValidSANmove(char* move){
+	if (move == NULL || strlen(move) < 2) return false;
+	else if (isValidPawnMove(move)) return true;
+	else if (isValidPieceMove(move)) return true;
+	else if (isValidCastle(move)) return true;
+	return false;
+}
+
+bool isPositiveInteger(const char *str) {
+    char *endptr;
+    long result = strtol(str, &endptr, 10);
+    if (*endptr != '\0') {
+        return false;  // Conversion failed, not a valid integer
+    }
+    return result > 0;
+}
+
+static bool isValidSan(char* game){
+	//check if the string is not empty
+	if (game == NULL || strlen(game) == 0) return false;
+
+	char *copy = (char*) malloc(strlen(game)+1);
+	strcpy(copy, game);
+	char *token = strtok(copy, " ");
+
+	//check if the string is in SAN format
+	while (token != NULL){
+		if(strlen(token) < 2){
+			elog(ERROR, "Invalid move: %s", token);
+			free(copy);
+			return false;
+		}
+		//check if number of move (ie "number.")
+		else if (token[strlen(token)-1] == '.'){ 
+			token[strlen(token)-1] = '\0';
+			if (!isPositiveInteger(token)) {
+				elog(ERROR, "Invalid move number: %s", token);
+				free(copy);
+				return false; 
+			}
+		}else if (!isValidSANmove(token)) {
+			elog(ERROR, "Invalid move: %s", token);
+			free(copy);
+			return false;
+		}
+
+		token = strtok(NULL, " ");
+	}
+	free(copy);
+	return true;
+} 
+
 static	chessgame* chessgame_make(const char *SAN_moves)
 {
 	chessgame	*game = (chessgame *) palloc(VARHDRSZ + strlen(SAN_moves) + 1);
@@ -9,7 +99,7 @@ static	chessgame* chessgame_make(const char *SAN_moves)
 			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) + 1);
 			memcpy(game->moves, SAN_moves, strlen(SAN_moves) + 1);
 		} else {
-			//game->moves = NULL;
+			ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("can't create a chessgame from NULL")));
 		}
 	} else {
 		ereport(ERROR, (errcode(ERRCODE_OUT_OF_MEMORY), errmsg("out of memory")));
@@ -19,9 +109,13 @@ static	chessgame* chessgame_make(const char *SAN_moves)
 
 static chessgame* chessgame_parse(const char *SAN_moves)
 {
-	//check if SAN
+	//check if the string is in SAN format
+	if (!isValidSan(SAN_moves))
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in SAN format")));
 	return (chessgame_make(SAN_moves));
 }
+
+//************SQL FUNCTIONS************
 
 PG_FUNCTION_INFO_V1(chessgame_in);
 Datum 
@@ -82,6 +176,9 @@ chessgame_constructor(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 	}
 }
+//*************************************CHESSBOARD*************************************
+
+//************INTERNAL FUNCTIONS************
 
 static chessboard *
 chessboard_make(char* FEN_board){
@@ -121,6 +218,7 @@ Datum chessboard_in(PG_FUNCTION_ARGS) {
     PG_RETURN_CHESSBOARD_P(result);
 } */
 
+//************SQL FUNCTIONS************
 
 PG_FUNCTION_INFO_V1(chessboard_constructor);
 Datum
