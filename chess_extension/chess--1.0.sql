@@ -129,7 +129,7 @@ CREATE FUNCTION chessgame(text)
 /******************************************************************************/
 /* B-Tree comparison functions */
 
-/* CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
+CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -152,14 +152,14 @@ CREATE OR REPLACE FUNCTION chessgame_abs_gt(chessgame, chessgame)
 CREATE OR REPLACE FUNCTION chessgame_abs_ge(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
 
 
 /******************************************************************************/
 
 /* B-Tree comparison operators */
 
-/* CREATE OPERATOR = (
+CREATE OPERATOR = (
   LEFTARG = chessgame, RIGHTARG = chessgame,
   PROCEDURE = chessgame_abs_eq,
   COMMUTATOR = =, NEGATOR = <>
@@ -183,22 +183,22 @@ CREATE OPERATOR > (
   LEFTARG = chessgame, RIGHTARG = chessgame,
   PROCEDURE = chessgame_abs_gt,
   COMMUTATOR = <, NEGATOR = <=
-); */
+);
 
 /******************************************************************************/
 
 /* B-Tree support function */
 
-/* CREATE OR REPLACE FUNCTION chessgame_abs_cmp(chessgame, chessgame)
+CREATE OR REPLACE FUNCTION chessgame_abs_cmp(chessgame, chessgame)
   RETURNS integer
   AS 'MODULE_PATHNAME'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 /******************************************************************************/
 
 /* B-Tree operator class */
 
-/* CREATE OPERATOR CLASS chessgame_abs_ops
+CREATE OPERATOR CLASS chessgame_abs_ops
 DEFAULT FOR TYPE chessgame USING btree
 AS
         OPERATOR        1       <  ,
@@ -206,6 +206,6 @@ AS
         OPERATOR        3       =  ,
         OPERATOR        4       >= ,
         OPERATOR        5       >  ,
-        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame); */
+        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame); 
 
 /******************************************************************************/
