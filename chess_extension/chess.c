@@ -57,7 +57,7 @@ bool isPositiveInteger(const char *str) {
     return result > 0;
 }
 
-static bool isValidSan(char* game){
+static bool isValidSan(const char* game){
 	//check if the string is not empty
 	if (game == NULL || strlen(game) == 0) return false;
 
@@ -116,7 +116,35 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	return (chessgame_make(SAN_moves));
 }
 
-/* static char **generateboards(char *moves, int* nb_move)
+static char* cutFirstMoves(char* moves, int halfMovesNbr){
+	int	length = 0;
+	int	movesCounter = 0;
+	//char *moves  =chgame->moves;
+	while (moves[length] && movesCounter < halfMovesNbr)
+	{
+		while (moves[length] == ' ')
+			length++;
+		if(!(moves[length] <'9' && moves[length] > '0'))
+				movesCounter++;
+		while (moves[length] && moves[length] != ' ')
+			length++;
+
+	}
+	char *result = malloc(sizeof(char) * (length + 1));
+	strncpy(result, moves, length);
+	result[length] = '\0';
+	return (result);
+}
+
+static int countMoves(char* moves){
+	SCL_Record	r;
+	SCL_Board	board;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, moves);
+	return (SCL_recordLength(r));
+}
+
+/* char **generateboards(char *moves, int* nb_move)
 {
 	SCL_Record	r;
 	SCL_Board	board;
@@ -205,10 +233,10 @@ static chessboard *
 chessboard_make(char* FEN_board){
 	//if (FEN_board == NULL)
 		//throw exception
-	chessboard *cb = palloc0(sizeof(chessboard) + strlen(FEN_board));
+	chessboard *cb = palloc0(sizeof(chessboard) + strlen(FEN_board) + 1);
 	if (cb == NULL)
 		ereport(ERROR, (errcode(ERRCODE_OUT_OF_MEMORY), errmsg("out of memory")));
-	SET_VARSIZE(cb, VARHDRSZ + strlen(FEN_board));
+	SET_VARSIZE(cb, VARHDRSZ + strlen(FEN_board) + 1);
 	memcpy(cb->board, FEN_board, strlen(FEN_board));
 	return cb;
 }
@@ -333,3 +361,133 @@ Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
   PG_RETURN_CSTRING(cb->board);
 } */
 
+//*************************************FUNCTIONS*************************************
+PG_FUNCTION_INFO_V1(getBoard);
+Datum
+getBoard(PG_FUNCTION_ARGS) {
+	//chessgame chgame, int halfMovesNbr
+	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	int halfMovesNbr = PG_GETARG_INT32(1);
+
+	SCL_Record	r;
+	SCL_Board	board;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, chgame->moves); 
+
+	int nb_move = countMoves(chgame->moves);
+
+	if (halfMovesNbr < 0){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+	if (halfMovesNbr > SCL_recordLength(r)){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+
+	SCL_recordApply(r, board, halfMovesNbr);
+
+	char fenstring[SCL_FEN_MAX_LENGTH];
+	SCL_boardToFEN(board, fenstring);
+	chessboard* result = chessboard_make(fenstring);
+	
+	//result.board = board;
+
+	/* result.board = strtok(fenString, " ");
+	result.color = fenstring[sttrlen(result->board) + 1];
+	result.castling = strtok(NULL, " ");
+	result.enpassant = strtok(NULL, " ");
+	result.halfMove = strtok(NULL, " ");
+	result.fullMove = strtok(NULL, " "); */
+
+
+	PG_FREE_IF_COPY(chgame, 0);
+	PG_RETURN_CHESSBOARD_P(result);
+}
+
+PG_FUNCTION_INFO_V1(getFirstMoves);
+Datum
+getFirstMoves(PG_FUNCTION_ARGS){
+	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	int halfMovesNbr = PG_GETARG_INT32(1);
+
+   /* 	SCL_Record r;
+    SCL_recordInit(r);
+    SCL_recordFromPGN(r, chgame->moves); */ 
+	int nb_move = countMoves(chgame->moves);
+	
+   	if (halfMovesNbr < 0){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+	if (halfMovesNbr > nb_move){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+    
+	char *firstMoves = cutFirstMoves(chgame->moves, halfMovesNbr);
+    chessgame* result = chessgame_make(firstMoves);
+	free(firstMoves);
+	PG_FREE_IF_COPY(chgame, 0);
+    PG_RETURN_CHESSGAME_P(result);
+}
+
+PG_FUNCTION_INFO_V1(hasOpening);
+Datum
+hasOpening(PG_FUNCTION_ARGS) {
+
+	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	chessgame *game2 = (chessgame*)PG_GETARG_CHESSGAME_P(1);
+	int nb_move1 = countMoves(game->moves);
+	int nb_move2 = countMoves(game2->moves);
+
+	if (nb_move1 < nb_move2 ){
+		PG_FREE_IF_COPY(game, 0);
+		PG_FREE_IF_COPY(game2, 1);
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The second game (opening) should be shorter than the first game (full game))")));
+	}
+ 
+    char* game1FirstMoves = cutFirstMoves(game->moves, nb_move2);
+    //chessgame *comparator_cut = chessgame_make(firstMoves);
+	
+    if (strcmp(game1FirstMoves, game2->moves) == 0){
+		PG_FREE_IF_COPY(game, 0);
+		PG_FREE_IF_COPY(game2, 1);
+		free(game1FirstMoves);
+        PG_RETURN_BOOL(true);
+
+    }
+	PG_FREE_IF_COPY(game, 0);
+	PG_FREE_IF_COPY(game2, 1);
+	free(game1FirstMoves);
+    PG_RETURN_BOOL(false);
+}
+
+PG_FUNCTION_INFO_V1(hasBoard);
+Datum
+hasBoard(PG_FUNCTION_ARGS) {
+	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	chessboard *cb = (chessboard *)PG_GETARG_CHESSBOARD_P(1);
+	uint32_t halfMovesNbr =  PG_GETARG_INT32(2);
+
+	SCL_Record	r;
+	SCL_Board	SCLBoard;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, game->moves); 
+	
+	char* copyBoard = strdup(cb->board);
+	copyBoard = strtok(copyBoard, " ");
+
+	if (SCL_recordLength(r) < halfMovesNbr)
+		halfMovesNbr = SCL_recordLength(r);	
+	char fenString[SCL_FEN_MAX_LENGTH];
+	for(int i = 0; i < halfMovesNbr; i++)
+	{
+		SCL_recordApply(r, SCLBoard, i);
+		SCL_boardToFEN(SCLBoard, fenString);
+		elog(INFO, "fenString: %s", fenString);
+		elog(INFO, "cb->board: %s", cb->board);
+		if (strcmp(strtok(fenString," "), copyBoard) == 0){
+			PG_FREE_IF_COPY(game, 0);
+		    PG_FREE_IF_COPY(cb, 1);
+			free(copyBoard);
+			PG_RETURN_BOOL(true);
+		}
+	}
+	PG_FREE_IF_COPY(game, 0);
+	PG_FREE_IF_COPY(cb, 1);
+	free(copyBoard);
+    PG_RETURN_BOOL(false);
+}

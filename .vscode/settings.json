@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "smallchesslib.h": "c"
+        "smallchesslib.h": "c",
+        "*.tcc": "c",
+        "string": "c",
+        "string_view": "c",
+        "random": "c"
     }
 }

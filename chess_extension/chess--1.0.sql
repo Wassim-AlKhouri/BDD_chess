@@ -2,8 +2,10 @@
 \echo Use "CREATE EXTENSION chess" to load this file. \quit
 
 /******************************************************************************
- * Input/Output
+ * chessboard
  ******************************************************************************/
+
+/* Input/Output */
 
 CREATE OR REPLACE FUNCTION chessboard_in(cstring)
   RETURNS chessboard
@@ -47,17 +49,18 @@ CREATE OR REPLACE FUNCTION text(chessboard)
 CREATE CAST (text as chessboard) WITH FUNCTION chessboard(text) AS IMPLICIT;
 CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard); */
 
-/******************************************************************************
- * Constructor
- ******************************************************************************/
+/* constructor */
 
 CREATE FUNCTION chessboard(text)
   RETURNS chessboard
   AS 'MODULE_PATHNAME', 'chessboard_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
-/*****************************************************************************/
+/*****************************************************************************
+  * chessgame
+  *****************************************************************************/
 
+/* Input/Output */
 CREATE OR REPLACE FUNCTION chessgame_in(cstring)
   RETURNS chessgame
   AS 'MODULE_PATHNAME'
@@ -100,15 +103,36 @@ CREATE OR REPLACE FUNCTION text(chessgame)
 CREATE CAST (text as chessgame) WITH FUNCTION chessgame(text) AS IMPLICIT;
 CREATE CAST (chessgame as text) WITH FUNCTION text(chessgame);
  */
-/******************************************************************************
- * Constructor
- ******************************************************************************/
 
 CREATE FUNCTION chessgame(text)
   RETURNS chessgame
   AS 'MODULE_PATHNAME', 'chessgame_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+/*****************************************************************************
+  * functions
+  *****************************************************************************/
+CREATE FUNCTION getBoard(chessgame, int)
+  RETURNS chessboard
+  AS 'MODULE_PATHNAME', 'getBoard'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  
+CREATE FUNCTION getFirstMoves(chessgame, int)
+  RETURNS chessgame
+  AS 'MODULE_PATHNAME', 'getFirstMoves'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+CREATE FUNCTION hasOpening(chessgame, chessgame)
+  RETURNS boolean
+  AS 'MODULE_PATHNAME', 'hasOpening'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
+
+CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+  RETURNS boolean
+  AS 'MODULE_PATHNAME', 'hasBoard'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+
+  
 /*****************************************************************************
   * GIN
   *****************************************************************************/
@@ -144,7 +168,10 @@ CREATE FUNCTION chessgame(text)
  */
     
     
-/******************************************************************************/
+/******************************************************************************
+ * B-Tree
+ ******************************************************************************/
+
 /* B-Tree comparison functions */
 
 /* CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
