@@ -4,7 +4,8 @@
 #include "fmgr.h"
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
-#include "smallchesslib.h"
+#include "access/gin.h"
+//#include "smallchesslib.h"
 
 
 typedef	struct
@@ -18,6 +19,8 @@ typedef	struct
 	int32 vl_len_;
 	char moves[FLEXIBLE_ARRAY_MEMBER];
 } chessgame;
+
+static char **generateboards(char *moves, int* nb_move);
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
 #define chessboardPGetDatum(X)  PointerGetDatum(X)

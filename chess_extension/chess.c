@@ -1,4 +1,5 @@
 #include "chess.h"
+#include "smallchesslib.h"
 PG_MODULE_MAGIC;
 
 //*************************************CHESSGAME*************************************
@@ -113,6 +114,26 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	if (!isValidSan(SAN_moves))
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in SAN format")));
 	return (chessgame_make(SAN_moves));
+}
+
+static char **generateboards(char *moves, int* nb_move)
+{
+	SCL_Record	r;
+	SCL_Board	board;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, moves);
+	*nb_move = SCL_recordLength(r);
+	char fenString[SCL_FEN_MAX_LENGTH];
+	char **allboards = palloc(sizeof(char *) * (*nb_move));
+
+	for(int i = 1; i < *nb_move; i++)
+	{
+		SCL_recordApply(r, board, i);
+		SCL_boardToFEN(board, fenString);
+		allboards[i] = pstrdup(strtok(fenString, " "));
+		i++;
+	}
+	return (allboards);
 }
 
 //************SQL FUNCTIONS************

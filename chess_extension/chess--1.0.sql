@@ -112,19 +112,37 @@ CREATE FUNCTION chessgame(text)
 /*****************************************************************************
   * GIN
   *****************************************************************************/
+   /* Support functions */
+  CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessgame, chessgame)
+    RETURNS integer
+    AS 'MODULE_PATHNAME'
+    LANGUAGE C IMMUTABLE PARALLEL SAFE;
 
-  /* Support function */
- /*  CREATE OR REPLACE FUNCTION gin_extract_board_states(chessgame)
-  RETURNS text[]
-  AS 'MODULE_PATHNAME'
-  LANGUAGE C IMMUTABLE PARALLEL SAFE;
+  CREATE OR REPLACE FUNCTION gin_extract_value_chessgame(chessgame)
+    RETURNS char[][]
+    AS 'MODULE_PATHNAME'
+    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+
+  CREATE OR REPLACE FUNCTION gin_extract_query_chessgame(internal, int16, internal, internal, internal, internal, internal)
+    RETURNS char[][]
+    AS 'MODULE_PATHNAME'
+    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+
+  CREATE OR REPLACE FUNCTION gin_consistent_chessgame(internal, int16, internal, int32, internal, internal, internal, internal)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME'
+    LANGUAGE C IMMUTABLE PARALLEL SAFE;
 
   /* Operator class */
   CREATE OPERATOR CLASS gin_chessgame_ops
-  DEFAULT FOR TYPE chess_game USING gin
-  AS
-    OPERATOR        1       &&,
-    FUNCTION        1       gin_extract_board_states(chess_game); */
+  DEFAULT FOR TYPE chessgame USING gin AS
+    OPERATOR        1       @>(chessgame, chessboard) ,
+    FUNCTION        1       gin_compare_chessgame(chessgame, chessgame),
+    FUNCTION        2       gin_extract_value_chessgame(chessgame),
+    FUNCTION        3       gin_extract_query_chessgame(internal, int16, internal, internal, internal, internal, internal),
+    FUNCTION        4       gin_consistent_chessgame(internal, int16, internal, int32, internal, internal, internal, internal);
+
+    
     
 /******************************************************************************/
 /* B-Tree comparison functions */
