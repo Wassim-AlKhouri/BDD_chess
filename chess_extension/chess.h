@@ -20,7 +20,7 @@ typedef	struct
 	char moves[FLEXIBLE_ARRAY_MEMBER];
 } chessgame;
 
-static char **generateboards(char *moves, int* nb_move);
+//static char **generateboards(char *moves, int* nb_move);
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
 #define chessboardPGetDatum(X)  PointerGetDatum(X)

@@ -116,7 +116,7 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	return (chessgame_make(SAN_moves));
 }
 
-static char **generateboards(char *moves, int* nb_move)
+/* static char **generateboards(char *moves, int* nb_move)
 {
 	SCL_Record	r;
 	SCL_Board	board;
@@ -134,7 +134,7 @@ static char **generateboards(char *moves, int* nb_move)
 		i++;
 	}
 	return (allboards);
-}
+} */
 
 //************SQL FUNCTIONS************
 

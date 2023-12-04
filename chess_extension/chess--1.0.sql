@@ -113,7 +113,7 @@ CREATE FUNCTION chessgame(text)
   * GIN
   *****************************************************************************/
    /* Support functions */
-  CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessgame, chessgame)
+/*   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessgame, chessgame)
     RETURNS integer
     AS 'MODULE_PATHNAME'
     LANGUAGE C IMMUTABLE PARALLEL SAFE;
@@ -141,13 +141,13 @@ CREATE FUNCTION chessgame(text)
     FUNCTION        2       gin_extract_value_chessgame(chessgame),
     FUNCTION        3       gin_extract_query_chessgame(internal, int16, internal, internal, internal, internal, internal),
     FUNCTION        4       gin_consistent_chessgame(internal, int16, internal, int32, internal, internal, internal, internal);
-
+ */
     
     
 /******************************************************************************/
 /* B-Tree comparison functions */
 
-CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
+/* CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -224,6 +224,6 @@ AS
         OPERATOR        3       =  ,
         OPERATOR        4       >= ,
         OPERATOR        5       >  ,
-        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame); 
+        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame);  */
 
 /******************************************************************************/
