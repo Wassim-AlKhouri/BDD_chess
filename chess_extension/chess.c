@@ -245,8 +245,8 @@ static chessboard *
 chessboard_parse(char* FEN_board){
 	SCL_Board	sclboard;
 
-	//if (SCL_boardFromFEN(sclboard, FEN_board) == 0)
-		//ereport(ERROR, (errcode(, errmsg("not a fen representation"))));
+	if (SCL_boardFromFEN(sclboard, FEN_board) == 0)
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in FENformat")));
 	return(chessboard_make(FEN_board));
 	
 }
