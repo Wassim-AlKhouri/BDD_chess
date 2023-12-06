@@ -92,13 +92,48 @@ static bool isValidSan(const char* game){
 	return true;
 } 
 
+static	int get_number_extraspaces(const char *SAN_moves)
+{
+	int	nb_extraspaces = 0;
+	int	i = 0;
+	while (SAN_moves && SAN_moves[i])
+	{
+		if (SAN_moves[i] == ' ')
+		{
+			i++;
+			while (SAN_moves[i] == ' ')
+			{
+				nb_extraspaces++;
+				i++;
+			}
+		}
+		else
+			i++;
+	}
+	return nb_extraspaces;
+}
+
 static	chessgame* chessgame_make(const char *SAN_moves)
 {
-	chessgame	*game = (chessgame *) palloc(VARHDRSZ + strlen(SAN_moves) + 1);
+	int	i = 0;
+	int	nb_extraspaces;
+	nb_extraspaces = get_number_extraspaces(SAN_moves);
+	chessgame	*game = (chessgame *) palloc(VARHDRSZ + strlen(SAN_moves) - nb_extraspaces + 1);
 	if (game != NULL) {
 		if (SAN_moves != NULL) {
-			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) + 1);
-			memcpy(game->moves, SAN_moves, strlen(SAN_moves) + 1);
+			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves - nb_extraspaces) + 1);
+			while (SAN_moves[i])
+			{
+				game->moves[i] = SAN_moves[i];
+				if (SAN_moves[i] == ' '){
+					i++;
+					while (SAN_moves[i] == ' ')
+						SAN_moves++;
+				}
+				else
+					i++;
+			}
+			game->moves[i] = 0;
 		} else {
 			ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("can't create a chessgame from NULL")));
 		}

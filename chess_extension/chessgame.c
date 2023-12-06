@@ -95,10 +95,10 @@ static	int get_number_extraspaces(const char *SAN_moves)
 	int	i = 0;
 	while (SAN_moves && SAN_moves[i])
 	{
-		if (SAN_moves[i] = ' ')
+		if (SAN_moves[i] == ' ')
 		{
 			i++;
-			while (SAN_moves[i] = ' ')
+			while (SAN_moves[i] == ' ')
 			{
 				nb_extraspaces++;
 				i++;
@@ -113,6 +113,8 @@ static	int get_number_extraspaces(const char *SAN_moves)
 static	chessgame* chessgame_make(const char *SAN_moves)
 {
 	int	i = 0;
+	int	nb_extraspaces;
+	nb_extraspaces = get_number_extraspaces(SAN_moves);
 	chessgame	*game = (chessgame *) palloc(VARHDRSZ + strlen(SAN_moves) - nb_extraspaces + 1);
 	if (game != NULL) {
 		if (SAN_moves != NULL) {
@@ -234,4 +236,117 @@ chessgame_constructor(PG_FUNCTION_ARGS)
 	} else {
 		PG_RETURN_NULL();
 	}
+}
+
+//functions
+PG_FUNCTION_INFO_V1(getBoard);
+Datum
+getBoard(PG_FUNCTION_ARGS) {
+	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	int halfMovesNbr = PG_GETARG_INT32(1);
+
+	SCL_Record	r;
+	SCL_Board	board;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, chgame->moves); 
+
+	int nb_move = countMoves(chgame->moves);
+
+	if (halfMovesNbr < 0){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+	if (halfMovesNbr > SCL_recordLength(r)){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+
+	SCL_recordApply(r, board, halfMovesNbr);
+	char fenstring[SCL_FEN_MAX_LENGTH];
+	SCL_boardToFEN(board, fenstring);
+	chessboard* result = chessboard_make(fenstring);
+	PG_FREE_IF_COPY(chgame, 0);
+	PG_RETURN_CHESSBOARD_P(result);
+}
+
+PG_FUNCTION_INFO_V1(getFirstMoves);
+Datum
+getFirstMoves(PG_FUNCTION_ARGS){
+	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	int halfMovesNbr = PG_GETARG_INT32(1);
+	int nb_move = countMoves(chgame->moves);
+	
+   	if (halfMovesNbr < 0){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+	if (halfMovesNbr > nb_move){
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+    
+	char *firstMoves = cutFirstMoves(chgame->moves, halfMovesNbr);
+    chessgame* result = chessgame_make(firstMoves);
+	free(firstMoves);
+	PG_FREE_IF_COPY(chgame, 0);
+    PG_RETURN_CHESSGAME_P(result);
+}
+
+PG_FUNCTION_INFO_V1(hasOpening);
+Datum
+hasOpening(PG_FUNCTION_ARGS) {
+
+	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	chessgame *game2 = (chessgame*)PG_GETARG_CHESSGAME_P(1);
+	int nb_move1 = countMoves(game->moves);
+	int nb_move2 = countMoves(game2->moves);
+
+	if (nb_move1 < nb_move2 ){
+		PG_FREE_IF_COPY(game, 0);
+		PG_FREE_IF_COPY(game2, 1);
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The second game (opening) should be shorter than the first game (full game))")));
+	}
+ 
+    char* game1FirstMoves = cutFirstMoves(game->moves, nb_move2);
+	
+    if (strcmp(game1FirstMoves, game2->moves) == 0){
+		PG_FREE_IF_COPY(game, 0);
+		PG_FREE_IF_COPY(game2, 1);
+		free(game1FirstMoves);
+        PG_RETURN_BOOL(true);
+
+    }
+	PG_FREE_IF_COPY(game, 0);
+	PG_FREE_IF_COPY(game2, 1);
+	free(game1FirstMoves);
+    PG_RETURN_BOOL(false);
+}
+
+PG_FUNCTION_INFO_V1(hasBoard);
+Datum
+hasBoard(PG_FUNCTION_ARGS) {
+	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	chessboard *cb = (chessboard *)PG_GETARG_CHESSBOARD_P(1);
+	uint32_t halfMovesNbr =  PG_GETARG_INT32(2);
+
+	SCL_Record	r;
+	SCL_Board	SCLBoard;
+	SCL_recordInit(r);
+    SCL_recordFromPGN(r, game->moves); 
+	
+	char* copyBoard = strdup(cb->board);
+	copyBoard = strtok(copyBoard, " ");
+
+	if (SCL_recordLength(r) < halfMovesNbr)
+		halfMovesNbr = SCL_recordLength(r);	
+	char fenString[SCL_FEN_MAX_LENGTH];
+	for(int i = 0; i < halfMovesNbr; i++)
+	{
+		SCL_recordApply(r, SCLBoard, i);
+		SCL_boardToFEN(SCLBoard, fenString);
+		elog(INFO, "fenString: %s", fenString);
+		elog(INFO, "cb->board: %s", cb->board);
+		if (strcmp(strtok(fenString," "), copyBoard) == 0){
+			PG_FREE_IF_COPY(game, 0);
+		    PG_FREE_IF_COPY(cb, 1);
+			free(copyBoard);
+			PG_RETURN_BOOL(true);
+		}
+	}
+	PG_FREE_IF_COPY(game, 0);
+	PG_FREE_IF_COPY(cb, 1);
+	free(copyBoard);
+    PG_RETURN_BOOL(false);
 }
