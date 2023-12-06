@@ -144,26 +144,6 @@ static int countMoves(char* moves){
 	return (SCL_recordLength(r));
 }
 
-/* char **generateboards(char *moves, int* nb_move)
-{
-	SCL_Record	r;
-	SCL_Board	board;
-	SCL_recordInit(r);
-    SCL_recordFromPGN(r, moves);
-	*nb_move = SCL_recordLength(r);
-	char fenString[SCL_FEN_MAX_LENGTH];
-	char **allboards = palloc(sizeof(char *) * (*nb_move));
-
-	for(int i = 1; i < *nb_move; i++)
-	{
-		SCL_recordApply(r, board, i);
-		SCL_boardToFEN(board, fenString);
-		allboards[i] = pstrdup(strtok(fenString, " "));
-		i++;
-	}
-	return (allboards);
-} */
-
 //************SQL FUNCTIONS************
 
 PG_FUNCTION_INFO_V1(chessgame_in);

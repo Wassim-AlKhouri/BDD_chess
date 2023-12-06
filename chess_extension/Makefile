@@ -3,6 +3,7 @@ OBJS = \
 	$(WIN32RES) \
 	chess.o \
 	smallchesslib.o \
+	chess_gin.o \
 
 EXTENSION   = chess
 DATA        = chess--1.0.sql
