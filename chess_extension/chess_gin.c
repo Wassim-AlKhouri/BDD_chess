@@ -12,16 +12,68 @@ static text **generateboards(chessgame *game, int32_t* nb_board)
     SCL_recordFromPGN(r, game->moves);
 	*nb_board = (int32_t) SCL_recordLength(r) + 1;
 	char fenString[SCL_FEN_MAX_LENGTH];
-	text **allboards = palloc(sizeof(char *) * (*nb_board));
+	text **allboards = (text **) palloc(sizeof(text *) * (*nb_board));
 
 	for(int i = 0; i < *nb_board; i++)
 	{
 		SCL_recordApply(r, board, i);
 		SCL_boardToFEN(board, fenString);
-        allboards[i] = cstring_to_text(strtok(fenString, " "));
+        char* truncatedBoard = strtok(fenString, " ");
+        allboards[i] = (text *) palloc(sizeof(text)); 
+        allboards[i] = cstring_to_text(truncatedBoard);
 	}
 	return (allboards);
 } 
+
+PG_FUNCTION_INFO_V1(gin_contains_chessboard);
+Datum 
+gin_contains_chessboard(PG_FUNCTION_ARGS)
+{
+    chessgame *a = (chessgame *) PG_GETARG_CHESSGAME_P(0);
+    chessboard *b = (chessboard *) PG_GETARG_CHESSBOARD_P(1);
+    // we need to compare the first part of the string (the board) and not the whole string
+    // but strtok modifies the string so we need to work with a copy of it
+    char* copyBoard = (char *) malloc(sizeof(char) * (strlen(b->board) + 1));
+    strcpy(copyBoard, b->board);
+    char* truncatedBoard = strtok(copyBoard, " ");
+
+    int* nkeys = (int *) malloc(sizeof(int));
+    text** boards = generateboards(a, nkeys);
+    bool res = false;
+
+    for (int i = 0; i < *nkeys; i++)
+    {
+        char* copyboard = text_to_cstring(boards[i]);
+        char* truncatedBoard2 = strtok(copyboard, " ");
+        if (strcmp(truncatedBoard2, truncatedBoard) == 0)
+        {
+            res = true;
+            break;
+        }
+    }
+
+    free(copyBoard);
+    for (int i = 0; i < *nkeys; i++) pfree(boards[i]);
+    pfree(boards);
+    free(nkeys);
+
+    PG_FREE_IF_COPY(a, 0);
+    PG_FREE_IF_COPY(b, 1);
+    PG_RETURN_INT32(res);
+}
+
+
+PG_FUNCTION_INFO_V1(gin_compare_chessgame);
+Datum 
+gin_compare_chessgame(PG_FUNCTION_ARGS)
+{
+    chessboard *a = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
+    chessboard *b = (chessboard *) PG_GETARG_CHESSBOARD_P(1);
+    int32_t res = strcmp(a->board, b->board);
+    PG_FREE_IF_COPY(a, 0);
+    PG_FREE_IF_COPY(b, 1);
+    PG_RETURN_INT32(res);
+}
 
 PG_FUNCTION_INFO_V1(gin_extract_value_chessgame);
 Datum 
@@ -70,26 +122,3 @@ gin_consistent_chessgame(PG_FUNCTION_ARGS)
     PG_RETURN_BOOL(false);
 }
 
-PG_FUNCTION_INFO_V1(gin_compare_chessgame);
-Datum 
-gin_compare_chessgame(PG_FUNCTION_ARGS)
-{
-    chessgame *a = (text *) PG_GETARG_CHESSGAME_P(0);
-    chessgame *b = (text *) PG_GETARG_CHESSGAME_P(1);
-    int32_t res = strcmp(a->moves, b->moves);
-    PG_FREE_IF_COPY(a, 0);
-    PG_FREE_IF_COPY(b, 1);
-    PG_RETURN_INT32(res);
-}
-
-
-/* PG_FUNCTION_INFO_V1(gin_compare_gameBoard);
-Datum 
-gin_compare_gameBoard(PG_FUNCTION_ARGS)
-{
-    text *a = (text *) PG_GETARG_TEXT_P(0);
-    text *b = (text *) PG_GETARG_TEXT_P(1);
-    PG_FREE_IF_COPY(a, 0);
-    PG_FREE_IF_COPY(b, 1);
-    PG_RETURN_INT32(res);
-} */

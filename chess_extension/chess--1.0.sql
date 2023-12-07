@@ -136,19 +136,26 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
 /*****************************************************************************
   * GIN
   *****************************************************************************/
-   /* Support functions */
-  CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessgame, chessgame)
+   /* Operator */
+  
+
+  CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
+    RETURNS boolean
+    AS 'MODULE_PATHNAME'
+    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+  
+  CREATE OPERATOR @> (
+    LEFTARG = chessgame, 
+    RIGHTARG = chessboard,
+    PROCEDURE = gin_contains_chessboard
+  );
+
+  /* Support functions */
+  CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)
     RETURNS integer
     AS 'MODULE_PATHNAME'
     LANGUAGE C IMMUTABLE PARALLEL SAFE;
   
-  CREATE OR REPLACE FUNCTION gin_compare_gameBoard(chessgame, chessBoard)
-    RETURNS boolean
-    AS $$
-      SELECT hasBoard($1, $2, 100);
-    $$
-    LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
-
   CREATE OR REPLACE FUNCTION gin_extract_value_chessgame(chessgame)
     RETURNS text[][]
     AS 'MODULE_PATHNAME'
@@ -164,18 +171,11 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
     AS 'MODULE_PATHNAME'
     LANGUAGE C IMMUTABLE PARALLEL SAFE;
 
-  CREATE OPERATOR @> (
-  LEFTARG = chessgame, 
-  RIGHTARG = chessboard,
-  PROCEDURE = gin_compare_gameBoard
-  /* COMMUTATOR = <=, NEGATOR = < */
-);
-
   /* Operator class */
   CREATE OPERATOR CLASS gin_chessgame_ops
   DEFAULT FOR TYPE chessgame USING gin AS
-    OPERATOR        1       @>(chessgame, chessboard) ,
-    FUNCTION        1       gin_compare_chessgame(chessgame, chessgame),
+    --OPERATOR        1       @>(chessgame, chessboard) ,
+    FUNCTION        1       gin_compare_chessgame(chessboard, chessboard),
     FUNCTION        2       gin_extract_value_chessgame(chessgame),
     FUNCTION        3       gin_extract_query_chessgame(internal, internal, internal, internal, internal, internal, internal),
     FUNCTION        4       gin_consistent_chessgame(internal, internal, internal, internal, internal, internal, internal, internal);
