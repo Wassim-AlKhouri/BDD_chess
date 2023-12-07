@@ -127,10 +127,10 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
   AS 'MODULE_PATHNAME', 'hasOpening'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
 
-CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+/* CREATE FUNCTION hasBoard(chessgame, chessboard, int)
   RETURNS boolean
   AS 'MODULE_PATHNAME', 'hasBoard'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
 
   
 /*****************************************************************************
@@ -149,6 +149,14 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
     RIGHTARG = chessboard,
     PROCEDURE = gin_contains_chessboard
   );
+
+  CREATE FUNCTION hasBoard(chessgame, chessboard)
+  RETURNS boolean
+  AS 
+  $$
+    SELECT $1 @> $2
+  $$ 
+  LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
   /* Support functions */
   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)
@@ -174,7 +182,7 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
   /* Operator class */
   CREATE OPERATOR CLASS gin_chessgame_ops
   DEFAULT FOR TYPE chessgame USING gin AS
-    --OPERATOR        1       @>(chessgame, chessboard) ,
+    OPERATOR        1       @>(chessgame, chessboard) ,
     FUNCTION        1       gin_compare_chessgame(chessboard, chessboard),
     FUNCTION        2       gin_extract_value_chessgame(chessgame),
     FUNCTION        3       gin_extract_query_chessgame(internal, internal, internal, internal, internal, internal, internal),

@@ -470,7 +470,7 @@ hasOpening(PG_FUNCTION_ARGS) {
     PG_RETURN_BOOL(false);
 }
 
-PG_FUNCTION_INFO_V1(hasBoard);
+/* PG_FUNCTION_INFO_V1(hasBoard);
 Datum
 hasBoard(PG_FUNCTION_ARGS) {
 	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
@@ -505,4 +505,4 @@ hasBoard(PG_FUNCTION_ARGS) {
 	PG_FREE_IF_COPY(cb, 1);
 	free(copyBoard);
     PG_RETURN_BOOL(false);
-}
+} */
