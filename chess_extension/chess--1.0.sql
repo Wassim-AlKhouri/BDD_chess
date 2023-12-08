@@ -154,7 +154,8 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
   RETURNS boolean
   AS 
   $$
-    SELECT getFirstMoves($1,$3) @> $2
+    --SELECT getFirstMoves($1,$3) @> $2
+    SELECT $1 @> $2
   $$ 
   LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
@@ -196,7 +197,7 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
 
 /* B-Tree comparison functions */
 
-/* CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
+CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -273,6 +274,6 @@ AS
         OPERATOR        3       =  ,
         OPERATOR        4       >= ,
         OPERATOR        5       >  ,
-        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame);  */
+        FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame);  
 
 /******************************************************************************/

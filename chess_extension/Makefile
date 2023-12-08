@@ -4,6 +4,7 @@ OBJS = \
 	chess.o \
 	smallchesslib.o \
 	chess_gin.o \
+	chessgame_btree.o \
 
 EXTENSION   = chess
 DATA        = chess--1.0.sql
