@@ -430,7 +430,8 @@ getFirstMoves(PG_FUNCTION_ARGS){
    	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
 	if (halfMovesNbr > nb_move){
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+		//ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+		halfMovesNbr = nb_move;}
     
 	char *firstMoves = cutFirstMoves(chgame->moves, halfMovesNbr);
     chessgame* result = chessgame_make(firstMoves);

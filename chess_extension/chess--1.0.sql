@@ -150,11 +150,11 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
     PROCEDURE = gin_contains_chessboard
   );
 
-  CREATE FUNCTION hasBoard(chessgame, chessboard)
+  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
   RETURNS boolean
   AS 
   $$
-    SELECT $1 @> $2
+    SELECT getFirstMoves($1,$3) @> $2
   $$ 
   LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
