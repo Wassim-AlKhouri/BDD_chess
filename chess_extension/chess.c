@@ -117,11 +117,15 @@ static	chessgame* chessgame_make(const char *SAN_moves)
 {
 	int	i = 0;
 	int	nb_extraspaces;
+	while (SAN_moves == ' ')
+		SAN_moves++;
+	while (strlen(SAN_moves) > 0 && strlen(SAN_moves) - 1 == ' ')
+		SAN_moves[strlen(SAN_moves) - 1] = 0;
 	nb_extraspaces = get_number_extraspaces(SAN_moves);
-	chessgame	*game = (chessgame *) palloc(VARHDRSZ + strlen(SAN_moves) - nb_extraspaces + 1);
+	chessgame	*game = (chessgame *) palloc0(VARHDRSZ + strlen(SAN_moves) - nb_extraspaces + 1);
 	if (game != NULL) {
-		if (SAN_moves != NULL) {
-			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves - nb_extraspaces) + 1);
+		if (SAN_moves != NULL && strlen(SAN_moves) > 0) {
+			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) - nb_extraspaces + 1);
 			while (SAN_moves[i])
 			{
 				game->moves[i] = SAN_moves[i];
