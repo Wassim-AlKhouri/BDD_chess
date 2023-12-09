@@ -139,7 +139,7 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
    /* Operator */
   
 
-  CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
+   CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
     RETURNS boolean
     AS 'MODULE_PATHNAME'
     LANGUAGE C IMMUTABLE PARALLEL SAFE;
@@ -150,14 +150,23 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
     PROCEDURE = gin_contains_chessboard
   );
 
-  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+  /* CREATE FUNCTION hasBoard(chessgame, chessboard, int)
   RETURNS boolean
   AS 
   $$
-    --SELECT getFirstMoves($1,$3) @> $2
     SELECT $1 @> $2
   $$ 
-  LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
+  LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE; */
+
+  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+    RETURNS boolean
+    AS 
+    $$
+      --SELECT regexp_replace($2::text, '\d+$', $3::text)::chessboard
+      --SELECT $1 @> chessboard_in(regexp_replace($2::text, '\d+$', $3::text)::chessboard)
+      SELECT $1 @> $2
+    $$ 
+    LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
   /* Support functions */
   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)

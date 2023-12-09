@@ -6,136 +6,9 @@ PG_MODULE_MAGIC;
 
 //************INTERNAL FUNCTIONS************
 
-static bool isValidPawnMove(char* move);
-static bool isValidPieceMove(char* move);
-static bool isValidCastle(const char* move);
-static bool isValidSANmove(char* move);
-bool isPositiveInteger(const char *str);
-static bool isValidSan(const char* game);
 
-static bool isValidPawnMove(char* move){
-	if (move[0] >= 'a' && move[0] <= 'h' && move[1] >= '1' && move[1] <= '8'){
-			if (strlen(move) == 4 && move[2] == '=' && 
-				(move[3] == 'Q' || move[3] == 'R' || move[3] == 'B' || move[3] == 'N')) {
-				
-				return true; // Valid promotion
-				}
-			else if (strlen(move) == 2) return true; // Valid move
-	}if (strlen(move) == 4 &&
-			move[0] >= 'a' &&
-			move[0] <= 'h' && 
-			move[1] == 'x' &&
-			move[2] >= 'a' && move[2] <= 'h' &&
-			move[3] >= '1' && move[3] <= '8') {
-			return true; // Valid capture
-		}
-	return false; //Invalid move
-}
 
-static bool isValidPieceMove(char* move) {
-    if (strlen(move) == 3 &&
-		(move[0] == 'K' || move[0] == 'Q' || move[0] == 'R' || move[0] == 'B' || move[0] == 'N') &&
-        move[1] >= 'a' && move[1] <= 'h' &&
-        move[2] >= '1' && move[2] <= '8') {
 
-        return true;  // Valid non-capture
-    }else if (strlen(move) == 4 && 
-			( 
-			((move[0] == 'K' || move[0] == 'Q' || move[0] == 'R' || move[0] == 'B' || move[0] == 'N') && move[1] == 'x') ||  
-			( (move[0] == 'N' || move[0] == 'R' || move[0] == 'B') && ((move[1] >= 'a' && move[1] <= 'h') ||(move[1] >= '1' && move[1] <= '8') )) 
-			) &&
-            move[2] >= 'a' && move[2] <= 'h' &&
-            move[3] >= '1' && move[3] <= '8') {
-            return true;  // Valid capture
-        }
-
-    return false;  // Invalid move
-}
-
-static bool isValidCastle(const char* move) {
-    if (strlen(move) == 5 && strncmp(move, "O-O-O", 5) == 0) return true;  // Valid kingside castle
-    else if (strlen(move) == 3 && strncmp(move, "O-O", 3) == 0) return true;  // Valid queenside castle
-    return false;  // Invalid move
-}
-
-static bool isValidSANmove(char* move){
-	if (move == NULL || strlen(move) < 2) return false;
-	else if (move[strlen(move) -1] == '+'){
-		move[strlen(move) -1] = '\0';
-		return isValidSANmove(move);
-	}
-	else if (isValidPawnMove(move)) return true;
-	else if (isValidPieceMove(move)) return true;
-	else if (isValidCastle(move)) return true;
-	return false;
-}
-
-bool isPositiveInteger(const char *str) {
-    char *endptr;
-    long result = strtol(str, &endptr, 10);
-    if (*endptr != '\0') {
-        return false;  // Conversion failed, not a valid integer
-    }
-    return result > 0;
-}
-
-static bool isValidSan(const char* game){
-	//check if the string is not empty
-	char *copy;
-	char *token;
-	if (game == NULL || strlen(game) == 0) return false;
-
-	copy = (char*) malloc(strlen(game)+1);
-	strcpy(copy, game);
-	token = strtok(copy, " ");
-
-	//check if the string is in SAN format
-	while (token != NULL){
-		if(strlen(token) < 2){
-			elog(ERROR, "Invalid move: %s", token);
-			free(copy);
-			return false;
-		}
-		//check if number of move (ie "number.")
-		else if (token[strlen(token)-1] == '.'){ 
-			token[strlen(token)-1] = '\0';
-			if (!isPositiveInteger(token)) {
-				elog(ERROR, "Invalid move number: %s", token);
-				free(copy);
-				return false; 
-			}
-		}else if (!isValidSANmove(token)) {
-			elog(ERROR, "Invalid move: %s", token);
-			free(copy);
-			return false;
-		}
-
-		token = strtok(NULL, " ");
-	}
-	free(copy);
-	return true;
-} 
-
-static	int get_number_extraspaces(const char *SAN_moves)
-{
-	int	nb_extraspaces = 0;
-	int	i = 0;
-	while (SAN_moves && SAN_moves[i])
-	{
-		if (SAN_moves[i] == ' ')
-		{
-			i++;
-			while (SAN_moves[i] == ' ')
-			{
-				nb_extraspaces++;
-				i++;
-			}
-		}
-		else
-			i++;
-	}
-	return nb_extraspaces;
-}
 char SAN_str [4096];
 
 static	chessgame* chessgame_make(const char *SAN_moves)
@@ -163,6 +36,7 @@ static	chessgame* chessgame_make(const char *SAN_moves)
 	memset(SAN_str, '\0', 4096);
 	return(game);
 }
+
 static void putCharStr(char c)
 {
   char *s = SAN_str;
@@ -187,7 +61,7 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	memset(SAN_str, '\0', 4096);
 
 	SCL_printPGN(r, putCharStr, 0);
-	elog(INFO, "SAN_str: %s", SAN_str);
+	//elog(INFO, "SAN_str: %s", SAN_str);
 	if (SAN_str[strlen(SAN_str) - 1] == '*' || SAN_str[strlen(SAN_str) - 1] == '#')
 		SAN_str[strlen(SAN_str) - 1] = '\0';
 	if (!isValidSan(SAN_str))
@@ -233,8 +107,8 @@ Datum
 chessgame_in(PG_FUNCTION_ARGS)
 {
 	const char *input = PG_GETARG_CSTRING(0);
-	elog(INFO, "BEFORE IN");
-	elog(INFO, "%s", input);
+	//elog(INFO, "BEFORE IN");
+	//elog(INFO, "%s", input);
 	PG_RETURN_CHESSGAME_P(chessgame_parse(input));
 }
 
@@ -244,8 +118,8 @@ chessgame_out(PG_FUNCTION_ARGS)
 {
 	chessgame	*game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	char	*str;
-	elog(INFO, "BEFORE OUT");
-	elog(INFO, "%s", (char *) VARDATA_ANY(game));
+	//elog(INFO, "BEFORE OUT");
+	//elog(INFO, "%s", (char *) VARDATA_ANY(game));
 	
 
 	if (VARDATA_ANY(game) != NULL) {
@@ -263,13 +137,13 @@ PG_FUNCTION_INFO_V1(chessgame_recv);
 Datum 
 chessgame_recv(PG_FUNCTION_ARGS)
 {
-	elog(INFO, "BEFORE RECV");
+	//elog(INFO, "BEFORE RECV");
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	
 	int	nbytes;
 	const int length = pq_getmsgint(buf, sizeof(int));
 	const char *recv_char = pq_getmsgtext(buf, length, &nbytes);
-	elog(INFO, "AFTER RECV %s", recv_char);
+	//elog(INFO, "AFTER RECV %s", recv_char);
 	PG_RETURN_CHESSGAME_P(chessgame_parse(recv_char));
 }
 
@@ -280,15 +154,15 @@ chessgame_send(PG_FUNCTION_ARGS)
 	chessgame	*game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	StringInfoData buf;
 	size_t nchars;
-	elog(INFO, "BEFORE BEFORE SEND");
-	elog(INFO, "%s", (char *) VARDATA_ANY(game));
+	//elog(INFO, "BEFORE BEFORE SEND");
+	//elog(INFO, "%s", (char *) VARDATA_ANY(game));
 	initStringInfo(&buf);
 	pq_begintypsend(&buf);
-	elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(game));
+	//elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(game));
 	nchars = VARSIZE_ANY_EXHDR(game);
 	pq_sendint(&buf,nchars, sizeof(int));
 	pq_sendtext(&buf,VARDATA_ANY(game), nchars);
-	elog(INFO, "AFTER SEND");
+	//elog(INFO, "AFTER SEND");
 	//pq_sendtext(&buf, game->moves, nchars);
 	PG_FREE_IF_COPY(game, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
@@ -298,7 +172,7 @@ PG_FUNCTION_INFO_V1(chessgame_constructor);
 Datum 
 chessgame_constructor(PG_FUNCTION_ARGS)
 {
-	elog(INFO, "BEFORE CONSTRUCTOR");
+	//elog(INFO, "BEFORE CONSTRUCTOR");
 	text *input = PG_GETARG_TEXT_P(0);
 	if (input != NULL) {
 		const char *moves = text_to_cstring(input);
@@ -380,8 +254,8 @@ PG_FUNCTION_INFO_V1(chessboard_out);
 Datum chessboard_out(PG_FUNCTION_ARGS){
 	chessgame	*board = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	char		*str;
-	elog(INFO, "BEFORE CHESSBOARD_OUT");
-	elog(INFO, "%s", (char *) VARDATA_ANY(board));
+	//elog(INFO, "BEFORE CHESSBOARD_OUT");
+	//elog(INFO, "%s", (char *) VARDATA_ANY(board));
 	
 
 	if (VARDATA_ANY(board) != NULL) {
@@ -433,12 +307,12 @@ PG_FUNCTION_INFO_V1(chessboard_recv);
 Datum 
 chessboard_recv(PG_FUNCTION_ARGS)
 {
-	elog(INFO, "BEFORE RECV");
+	//elog(INFO, "BEFORE RECV");
 	int	nbytes;
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	const int length = pq_getmsgint(buf, sizeof(int));
 	const char *recv_char = pq_getmsgtext(buf, length, &nbytes);
-	elog(INFO, "AFTER RECV %s", recv_char);
+	//elog(INFO, "AFTER RECV %s", recv_char);
 	PG_RETURN_CHESSGAME_P(chessboard_parse(recv_char));
 }
 
@@ -449,16 +323,16 @@ chessboard_send(PG_FUNCTION_ARGS)
 	chessboard	*board = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
 	StringInfoData buf;
 	size_t nchars = VARSIZE_ANY_EXHDR(board);
-	elog(INFO, "BEFORE BEFORE SEND");
-	elog(INFO, "%s", (char *) VARDATA_ANY(board));
+	//elog(INFO, "BEFORE BEFORE SEND");
+	//elog(INFO, "%s", (char *) VARDATA_ANY(board));
 	
 	initStringInfo(&buf);
 	pq_begintypsend(&buf);
-	elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(board));
+	//elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(board));
 	
 	pq_sendint(&buf,nchars, sizeof(int));
 	pq_sendtext(&buf,VARDATA_ANY(board), nchars);
-	elog(INFO, "AFTER SEND");
+	//elog(INFO, "AFTER SEND");
 	//pq_sendtext(&buf, game->moves, nchars);
 	PG_FREE_IF_COPY(board, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
@@ -609,8 +483,8 @@ hasBoard(PG_FUNCTION_ARGS) {
 	{
 		SCL_recordApply(r, SCLBoard, i);
 		SCL_boardToFEN(SCLBoard, fenString);
-		elog(INFO, "fenString: %s", fenString);
-		elog(INFO, "cb->board: %s", cb->board);
+		//elog(INFO, "fenString: %s", fenString);
+		//elog(INFO, "cb->board: %s", cb->board);
 		if (strcmp(strtok(fenString," "), copyBoard) == 0){
 			PG_FREE_IF_COPY(game, 0);
 		    PG_FREE_IF_COPY(cb, 1);

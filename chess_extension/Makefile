@@ -2,6 +2,7 @@ MODULE_big	= chess
 OBJS = \
 	$(WIN32RES) \
 	chess.o \
+	chess_utils.o \
 	smallchesslib.o \
 	chess_gin.o \
 	chessgame_btree.o \

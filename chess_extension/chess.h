@@ -21,6 +21,7 @@ typedef	struct
 } chessgame;
 
 //char **generateboards(char *moves, int* nb_move);
+bool isValidSan(const char* game);
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
 #define chessboardPGetDatum(X)  PointerGetDatum(X)

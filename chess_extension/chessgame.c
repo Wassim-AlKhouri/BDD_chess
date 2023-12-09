@@ -65,7 +65,7 @@ static bool isValidSan(const char* game){
 	//check if the string is in SAN format
 	while (token != NULL){
 		if(strlen(token) < 2){
-			elog(ERROR, "Invalid move: %s", token);
+			//elog(ERROR, "Invalid move: %s", token);
 			free(copy);
 			return false;
 		}
@@ -73,12 +73,12 @@ static bool isValidSan(const char* game){
 		else if (token[strlen(token)-1] == '.'){ 
 			token[strlen(token)-1] = '\0';
 			if (!isPositiveInteger(token)) {
-				elog(ERROR, "Invalid move number: %s", token);
+				//elog(ERROR, "Invalid move number: %s", token);
 				free(copy);
 				return false; 
 			}
 		}else if (!isValidSANmove(token)) {
-			elog(ERROR, "Invalid move: %s", token);
+			//elog(ERROR, "Invalid move: %s", token);
 			free(copy);
 			return false;
 		}
@@ -336,8 +336,8 @@ hasBoard(PG_FUNCTION_ARGS) {
 	{
 		SCL_recordApply(r, SCLBoard, i);
 		SCL_boardToFEN(SCLBoard, fenString);
-		elog(INFO, "fenString: %s", fenString);
-		elog(INFO, "cb->board: %s", cb->board);
+		//elog(INFO, "fenString: %s", fenString);
+		//elog(INFO, "cb->board: %s", cb->board);
 		if (strcmp(strtok(fenString," "), copyBoard) == 0){
 			PG_FREE_IF_COPY(game, 0);
 		    PG_FREE_IF_COPY(cb, 1);
