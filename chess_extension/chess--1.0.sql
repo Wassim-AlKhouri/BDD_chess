@@ -158,15 +158,6 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
   $$ 
   LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE; */
 
-  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
-    RETURNS boolean
-    AS 
-    $$
-      --SELECT regexp_replace($2::text, '\d+$', $3::text)::chessboard
-      --SELECT $1 @> chessboard_in(regexp_replace($2::text, '\d+$', $3::text)::chessboard)
-      SELECT $1 @> $2
-    $$ 
-    LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
   /* Support functions */
   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)
@@ -199,6 +190,15 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
     FUNCTION        4       gin_consistent_chessgame(internal, internal, internal, internal, internal, internal, internal, internal);
 
     
+  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+    RETURNS boolean
+    AS 
+    $$
+      --SELECT regexp_replace($2::text, '\d+$', $3::text)::chessboard
+      SELECT $1 @> regexp_replace($2::text, '\d+$', $3::text)::chessboard
+      --SELECT $1 @> $2
+    $$ 
+    LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
     
 /******************************************************************************
  * B-Tree

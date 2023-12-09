@@ -6,34 +6,25 @@ PG_MODULE_MAGIC;
 
 //************INTERNAL FUNCTIONS************
 
-
-
-
 char SAN_str [4096];
 
 static	chessgame* chessgame_make(const char *SAN_moves)
 {
 	int	i = 0;
 	chessgame	*game;
-	/*while (SAN_moves == ' ')
-		SAN_moves++;
-	while (strlen(SAN_moves) > 0 && strlen(SAN_moves) - 1 == ' ')
-		SAN_moves[strlen(SAN_moves) - 1] = 0;*/
-	//nb_extraspaces = get_number_extraspaces(SAN_moves);
+
 	game = (chessgame *) palloc0(VARHDRSZ + strlen(SAN_moves) + 1);
 	if (game != NULL) {
 		if (SAN_moves != NULL && strlen(SAN_moves) > 0) {
 			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) + 1);
 			memcpy(VARDATA(game), SAN_moves, VARSIZE_ANY_EXHDR(game));
 		} else {
-			memset(SAN_str, '\0', 4096);
+			pfree(game);
 			ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("can't create a chessgame from NULL")));
 		}
 	} else {
-		memset(SAN_str, '\0', 4096);
 		ereport(ERROR, (errcode(ERRCODE_OUT_OF_MEMORY), errmsg("out of memory")));
 	}
-	memset(SAN_str, '\0', 4096);
 	return(game);
 }
 
@@ -42,9 +33,7 @@ static void putCharStr(char c)
   char *s = SAN_str;
   while (*s != 0){
 	if (s - SAN_str >= 4095){
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("string too long")));
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),errmsg("string too long")));
 	}
     s++;
   }
@@ -64,9 +53,7 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	//elog(INFO, "SAN_str: %s", SAN_str);
 	if (SAN_str[strlen(SAN_str) - 1] == '*' || SAN_str[strlen(SAN_str) - 1] == '#')
 		SAN_str[strlen(SAN_str) - 1] = '\0';
-	if (!isValidSan(SAN_str))
-	 {
-		memset(SAN_str, '\0', 4096);
+	if (!isValidSan(SAN_str)){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in SAN format")));
 	 }
 	return (chessgame_make(SAN_str));
@@ -76,12 +63,11 @@ static char* cutFirstMoves(char* moves, int halfMovesNbr){
 	int	length = 0;
 	int	movesCounter = 0;
 	char *result;
-	//char *moves  =chgame->moves;
 	while (moves[length] && movesCounter < halfMovesNbr)
 	{
 		while (moves[length] == ' ')
 			length++;
-		if(!(moves[length] <'9' && moves[length] > '0'))
+		if(!(moves[length] <= '9' && moves[length] >= '0'))
 				movesCounter++;
 		while (moves[length] && moves[length] != ' ')
 			length++;
@@ -375,10 +361,8 @@ getBoard(PG_FUNCTION_ARGS) {
 	SCL_Record	r;
 	SCL_Board	board;
 	SCL_recordInit(r);
-    SCL_recordFromPGN(r, chgame->moves); 
+    SCL_recordFromPGN(r, VARDATA_ANY(chgame)); 
 	char fenstring[SCL_FEN_MAX_LENGTH];
-
-	//int nb_move = countMoves(chgame->moves);
 
 	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
@@ -390,17 +374,6 @@ getBoard(PG_FUNCTION_ARGS) {
 	
 	SCL_boardToFEN(board, fenstring);
 	result = chessboard_make(fenstring);
-	
-	//result.board = board;
-
-	/* result.board = strtok(fenString, " ");
-	result.color = fenstring[sttrlen(result->board) + 1];
-	result.castling = strtok(NULL, " ");
-	result.enpassant = strtok(NULL, " ");
-	result.halfMove = strtok(NULL, " ");
-	result.fullMove = strtok(NULL, " "); */
-
-
 	PG_FREE_IF_COPY(chgame, 0);
 	PG_RETURN_CHESSBOARD_P(result);
 }
@@ -414,7 +387,7 @@ getFirstMoves(PG_FUNCTION_ARGS){
    /* 	SCL_Record r;
     SCL_recordInit(r);
     SCL_recordFromPGN(r, chgame->moves); */ 
-	int nb_move = countMoves(chgame->moves);
+	int nb_move = countMoves(VARDATA_ANY(chgame));
 	
    	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
@@ -422,7 +395,7 @@ getFirstMoves(PG_FUNCTION_ARGS){
 		//ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
 		halfMovesNbr = nb_move;}
     
-	firstMoves = cutFirstMoves(chgame->moves, halfMovesNbr);
+	firstMoves = cutFirstMoves(VARDATA_ANY(chgame), halfMovesNbr);
     chessgame* result = chessgame_make(firstMoves);
 	free(firstMoves);
 	PG_FREE_IF_COPY(chgame, 0);

@@ -9,12 +9,19 @@ static bool isValidPawnMove(char* move){
 				}
 			else if (strlen(move) == 2) return true; // Valid move
 	}if (strlen(move) == 4 &&
-			move[0] >= 'a' &&
-			move[0] <= 'h' && 
+			move[0] >= 'a' && move[0] <= 'h' && 
 			move[1] == 'x' &&
 			move[2] >= 'a' && move[2] <= 'h' &&
 			move[3] >= '1' && move[3] <= '8') {
 			return true; // Valid capture
+	} else if (strlen(move) == 6 &&
+			move[0] >= 'a' && move[0] <= 'h' && 
+			move[1] == 'x' &&
+			move[2] >= 'a' && move[2] <= 'h' &&
+			move[3] >= '1' && move[3] <= '8' &&
+			move[4] == '=' &&
+			(move[5] == 'Q' || move[5] == 'R' || move[5] == 'B' || move[5] == 'N')) {
+			return true; // Valid capture and promotion
 		}
 	return false; //Invalid move
 }
@@ -29,12 +36,19 @@ static bool isValidPieceMove(char* move) {
     }else if (strlen(move) == 4 && 
 			( 
 			((move[0] == 'K' || move[0] == 'Q' || move[0] == 'R' || move[0] == 'B' || move[0] == 'N') && move[1] == 'x') ||  
-			( (move[0] == 'N' || move[0] == 'R' || move[0] == 'B') && ((move[1] >= 'a' && move[1] <= 'h') ||(move[1] >= '1' && move[1] <= '8') )) 
+			( (move[0] == 'N' || move[0] == 'R' || move[0] == 'B') && ((move[1] >= 'a' && move[1] <= 'h') ||(move[1] >= '1' && move[1] <= '8')) ) 
 			) &&
             move[2] >= 'a' && move[2] <= 'h' &&
             move[3] >= '1' && move[3] <= '8') {
             return true;  // Valid capture
-        }
+    }else if (strlen(move) == 5 &&
+			(move[0] == 'N' || move[0] == 'R' || move[0] == 'B') &&
+			( (move[1] >= 'a' && move[1] <= 'h') ||(move[1] >= '1' && move[1] <= '8') ) &&
+			move[2] == 'x' &&
+			move[3] >= 'a' && move[3] <= 'h' &&
+			move[4] >= '1' && move[4] <= '8') {
+			return true;  // Valid capture with a specified file or rank
+		}
 
     return false;  // Invalid move
 }
@@ -92,7 +106,7 @@ bool isValidSan(const char* game){
 				return false; 
 			}
 		}else if (!isValidSANmove(token)) {
-			////elog(ERROR, "Invalid move: %s", token);
+			elog(ERROR, "Invalid move: %s", token);
 			free(copy);
 			return false;
 		}

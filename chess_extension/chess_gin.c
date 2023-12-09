@@ -162,29 +162,34 @@ gin_extract_query_chessgame(PG_FUNCTION_ARGS)
     /* ////elog(INFO, "EXTRACT QUERY");
     //elog(INFO, "query->board: %s", query->board); */
 
-    /* char* copy = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(query));
-    memcpy(copy, VARDATA(query), VARSIZE_ANY_EXHDR(query));
+    char* copy = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(query));
+    memcpy(copy, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
     int i = strlen(copy);
     while (copy[i - 1] == ' ')
         i--;
     while (copy[i - 1] <= '9' && copy[i - 1]>= '1')
         i--;
-    int nb_halfmove = atoi(copy[i]);
-    ////elog (INFO, "!!!!!!!!!!nb_halfmove: %d", nb_halfmove); */
+    int nb_halfmove = atoi(copy + i);
+    //elog (INFO, "!!!!!!!!!!nb_halfmove: %d", nb_halfmove);
 
 
     int32_t *nkeys = (int32_t *) PG_GETARG_POINTER(1);
     int16_t strategyNumber = PG_GETARG_INT16(2);
     bool **pmatch = (bool **) PG_GETARG_POINTER(3); // not used (no partial match)
-    Pointer **extra_data = (Pointer **) PG_GETARG_POINTER(4); // not used (no extra data)
+    int **extra_data = (int **) PG_GETARG_POINTER(4); 
     bool** nullFlags = (bool **) PG_GETARG_POINTER(5); // not used (no nulls)
     int32_t* searchMode = (int32_t *) PG_GETARG_POINTER(6);
     text** boards;
     
     *searchMode = GIN_SEARCH_MODE_DEFAULT;
     *nkeys = 1;
-    boards = (text **) palloc(sizeof(text *));
-    boards[0] = (text *) palloc(VARHDRSZ + VARSIZE_ANY_EXHDR(query) + 1);
+
+    //extra_data = (int **) palloc(sizeof(int*));
+    extra_data[0] = (int *) palloc(sizeof(int));
+    extra_data[0][0] = nb_halfmove;
+
+    boards = (text **) palloc0(sizeof(text *));
+    boards[0] = (text *) palloc0(VARHDRSZ + VARSIZE_ANY_EXHDR(query) + 1);
     SET_VARSIZE(boards[0], VARHDRSZ + VARSIZE_ANY_EXHDR(query) + 1);
     memcpy(VARDATA(boards[0]), VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query) + 1);
     PG_RETURN_POINTER(boards);
@@ -198,11 +203,15 @@ gin_consistent_chessgame(PG_FUNCTION_ARGS)
     int16_t strategyNumber = PG_GETARG_INT16(1);
     text *query = (text *) PG_GETARG_TEXT_P(2);
     int32_t nkeys = PG_GETARG_INT32(3);
-    Pointer *extra_data = (Pointer *) PG_GETARG_POINTER(4); // not used (no extra data)
+    //elog(INFO, "!!!!!!!!!!before extra");
+    int *extra_data = (int *) PG_GETARG_POINTER(4); // extra_data is the number of halfmoves that the board should be in
+    //elog(INFO, "!!!!!!!!!!after extra");
+    //elog(INFO, "!!!!!!!!!!: %d", extra_data[0]);
     bool *recheck = (bool *) PG_GETARG_POINTER(5); // not used (no recheck)
     Datum *queryKeys = (Datum *) PG_GETARG_POINTER(6); // not used
     bool *nullFlags = (bool *) PG_GETARG_POINTER(7); // not used (no nulls)
-    for (int i = 0; i < nkeys; i++) {
+
+    for (int i = 0; i < extra_data[0]; i++){
         if (check[i]) PG_RETURN_BOOL(true);
     }
     PG_RETURN_BOOL(false);
