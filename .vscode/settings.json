@@ -5,6 +5,7 @@
         "string": "c",
         "string_view": "c",
         "random": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "functional": "c"
     }
 }

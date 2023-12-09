@@ -48,9 +48,8 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	SCL_recordInit(r);
 	SCL_recordFromPGN(r, SAN_moves);
 	memset(SAN_str, '\0', 4096);
-
 	SCL_printPGN(r, putCharStr, 0);
-	//elog(INFO, "SAN_str: %s", SAN_str);
+
 	if (SAN_str[strlen(SAN_str) - 1] == '*' || SAN_str[strlen(SAN_str) - 1] == '#')
 		SAN_str[strlen(SAN_str) - 1] = '\0';
 	if (!isValidSan(SAN_str)){
@@ -87,14 +86,11 @@ static int countMoves(char* moves){
 }
 
 //************SQL FUNCTIONS************
-
 PG_FUNCTION_INFO_V1(chessgame_in);
 Datum 
 chessgame_in(PG_FUNCTION_ARGS)
 {
 	const char *input = PG_GETARG_CSTRING(0);
-	//elog(INFO, "BEFORE IN");
-	//elog(INFO, "%s", input);
 	PG_RETURN_CHESSGAME_P(chessgame_parse(input));
 }
 
@@ -104,10 +100,6 @@ chessgame_out(PG_FUNCTION_ARGS)
 {
 	chessgame	*game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	char	*str;
-	//elog(INFO, "BEFORE OUT");
-	//elog(INFO, "%s", (char *) VARDATA_ANY(game));
-	
-
 	if (VARDATA_ANY(game) != NULL) {
 		str = palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(game));
 		memcpy(str, VARDATA_ANY(game), VARSIZE_ANY_EXHDR(game));  
@@ -123,13 +115,10 @@ PG_FUNCTION_INFO_V1(chessgame_recv);
 Datum 
 chessgame_recv(PG_FUNCTION_ARGS)
 {
-	//elog(INFO, "BEFORE RECV");
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
-	
 	int	nbytes;
 	const int length = pq_getmsgint(buf, sizeof(int));
 	const char *recv_char = pq_getmsgtext(buf, length, &nbytes);
-	//elog(INFO, "AFTER RECV %s", recv_char);
 	PG_RETURN_CHESSGAME_P(chessgame_parse(recv_char));
 }
 
@@ -140,16 +129,11 @@ chessgame_send(PG_FUNCTION_ARGS)
 	chessgame	*game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	StringInfoData buf;
 	size_t nchars;
-	//elog(INFO, "BEFORE BEFORE SEND");
-	//elog(INFO, "%s", (char *) VARDATA_ANY(game));
 	initStringInfo(&buf);
 	pq_begintypsend(&buf);
-	//elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(game));
 	nchars = VARSIZE_ANY_EXHDR(game);
 	pq_sendint(&buf,nchars, sizeof(int));
 	pq_sendtext(&buf,VARDATA_ANY(game), nchars);
-	//elog(INFO, "AFTER SEND");
-	//pq_sendtext(&buf, game->moves, nchars);
 	PG_FREE_IF_COPY(game, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
@@ -158,92 +142,58 @@ PG_FUNCTION_INFO_V1(chessgame_constructor);
 Datum 
 chessgame_constructor(PG_FUNCTION_ARGS)
 {
-	//elog(INFO, "BEFORE CONSTRUCTOR");
-	text *input = PG_GETARG_TEXT_P(0);
-	if (input != NULL) {
-		const char *moves = text_to_cstring(input);
-		PG_RETURN_CHESSGAME_P(chessgame_parse(moves));
-	} else {
-		PG_RETURN_NULL();
-	}
+	char *input = PG_GETARG_CSTRING(0);
+	PG_RETURN_CHESSGAME_P(chessgame_parse(input));
 }
 //*************************************CHESSBOARD*************************************
 
 //************INTERNAL FUNCTIONS************
-
 static chessboard *
 chessboard_make(const char* FEN_board){
-	//if (FEN_board == NULL)
-		//throw exception
-	chessboard *cb = palloc0(sizeof(chessboard) + strlen(FEN_board) + 1);
+	chessboard *cb = palloc0(VARHDRSZ + strlen(FEN_board) + 1);
 	if (cb == NULL)
 		ereport(ERROR, (errcode(ERRCODE_OUT_OF_MEMORY), errmsg("out of memory")));
 	SET_VARSIZE(cb, VARHDRSZ + strlen(FEN_board) + 1);
-	memcpy(cb->board, FEN_board, strlen(FEN_board));
+	memcpy(VARDATA(cb), FEN_board, strlen(FEN_board) + 1);
 	return cb;
 }
 
 static chessboard *
 chessboard_parse(const char* FEN_board){
 	SCL_Board	sclboard;
-
 	if (SCL_boardFromFEN(sclboard, FEN_board) == 0)
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in FENformat")));
 	return(chessboard_make(FEN_board));
-	
 }
-////////////////
 
-/* PG_FUNCTION_INFO_V1(chessboard_in);
-Datum chessboard_in(PG_FUNCTION_ARGS) {
-    char	*str = PG_GETARG_CSTRING(0);
+PG_FUNCTION_INFO_V1(chessgame_cast_from_text);
+Datum chessgame_cast_from_text(PG_FUNCTION_ARGS)
+{  	
+	text *txt = PG_GETARG_TEXT_P(0);
+	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
+    PG_RETURN_POINTER(chessgame_parse(str)); 
+}
 
-	//check if format FEN
-	chessboard *result = (chessboard *)palloc(sizeof(chessboard));
-	result->board = pstrdup(strtok(str, " "));
-    result->color = *strtok(NULL, " ");
-	result->castling = pstrdup(strtok(NULL, " "));
-	result->enpassant = pstrdup(strtok(NULL, " "));
-	result->halfmove = atoi(strtok(NULL, " "));
-	result->fullmove = atoi(strtok(NULL, " "));
-    PG_RETURN_CHESSBOARD_P(result);
-} */
+PG_FUNCTION_INFO_V1(chessgame_cast_to_text);
+Datum chessgame_cast_to_text(PG_FUNCTION_ARGS)
+{
+  chessgame *cg = PG_GETARG_CHESSGAME_P(0);
+  text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cg) + VARHDRSZ);
+  memcpy(VARDATA(result), VARDATA_ANY(cg), VARSIZE_ANY_EXHDR(cg));
+  PG_RETURN_CSTRING(result);
+} 
 
 //************SQL FUNCTIONS************
-
-PG_FUNCTION_INFO_V1(chessboard_constructor);
-Datum
-chessboard_constructor(PG_FUNCTION_ARGS)
-{
-	text *input = PG_GETARG_TEXT_P(0);
-	if (input != NULL) {
-		char *cb = text_to_cstring(input);
-		PG_RETURN_CHESSBOARD_P(chessboard_parse(cb));
-	}
-	else
-		PG_RETURN_NULL();
-}
-
 PG_FUNCTION_INFO_V1(chessboard_in);
 Datum chessboard_in(PG_FUNCTION_ARGS) {
     char	*str = PG_GETARG_CSTRING(0);
     PG_RETURN_CHESSBOARD_P(chessboard_parse(str));
 }
 
-/* PG_FUNCTION_INFO_V1(chessboard_out);
-Datum chessboard_out(PG_FUNCTION_ARGS){
-	chessboard *c = (chessboard *)PG_GETARG_CHESSBOARD_P(0);
-	char *result = psprintf("%s %c %s %s %d %d", c->board, c->color, c->castling, c->enpassant, c->halfmove, c->fullmove);
-	PG_RETURN_CSTRING(result);
-} */
 PG_FUNCTION_INFO_V1(chessboard_out);
 Datum chessboard_out(PG_FUNCTION_ARGS){
 	chessgame	*board = (chessgame *) PG_GETARG_CHESSGAME_P(0);
 	char		*str;
-	//elog(INFO, "BEFORE CHESSBOARD_OUT");
-	//elog(INFO, "%s", (char *) VARDATA_ANY(board));
-	
-
 	if (VARDATA_ANY(board) != NULL) {
 		str = palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(board));
 		memcpy(str, VARDATA_ANY(board), VARSIZE_ANY_EXHDR(board));  
@@ -255,50 +205,14 @@ Datum chessboard_out(PG_FUNCTION_ARGS){
     }
 }
 
-/* PG_FUNCTION_INFO_V1(chessboard_recv);
-Datum chessboard_recv(PG_FUNCTION_ARGS){
-	StringInfo	buf = (StringInfo) PG_GETARG_CHESSBOARD_P(0);
-	chessboard *result = (chessboard *)palloc(sizeof(chessboard));
-	result->board = pstrdup(pq_getmsgstring(buf));
-	result->color = *pq_getmsgstring(buf);
-	result->castling = pstrdup(pq_getmsgstring(buf));
-	result->enpassant = pstrdup(pq_getmsgstring(buf));
-	result->halfmove = pq_getmsgint(buf, sizeof(int));
-	result->fullmove = pq_getmsgint(buf, sizeof(int));
-	PG_RETURN_POINTER(result);
-} */
-
-/* PG_FUNCTION_INFO_V1(chessboard_recv);
-Datum chessboard_recv(PG_FUNCTION_ARGS){
-	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
-	int	nbytes;
-	const int length = pq_getmsgint64(buf);
-	char *recv_char = pq_getmsgtext(buf, length, &nbytes);
-	PG_RETURN_CHESSBOARD_P(chessboard_parse(recv_char));
-}
-
-PG_FUNCTION_INFO_V1(chessboard_send);
-Datum chessboard_send(PG_FUNCTION_ARGS){
-	chessboard	*cb = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
-	StringInfoData buf;
-	pq_begintypsend(&buf);
-	int nchars = strlen(cb->board);
-	pq_sendint64(&buf, nchars);
-	pq_sendtext(&buf, cb->board, nchars);
-	PG_FREE_IF_COPY(cb, 0);
-	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
-} */
-
 PG_FUNCTION_INFO_V1(chessboard_recv);
 Datum 
 chessboard_recv(PG_FUNCTION_ARGS)
 {
-	//elog(INFO, "BEFORE RECV");
 	int	nbytes;
 	StringInfo	buf = (StringInfo) PG_GETARG_POINTER(0);
 	const int length = pq_getmsgint(buf, sizeof(int));
 	const char *recv_char = pq_getmsgtext(buf, length, &nbytes);
-	//elog(INFO, "AFTER RECV %s", recv_char);
 	PG_RETURN_CHESSGAME_P(chessboard_parse(recv_char));
 }
 
@@ -309,46 +223,40 @@ chessboard_send(PG_FUNCTION_ARGS)
 	chessboard	*board = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
 	StringInfoData buf;
 	size_t nchars = VARSIZE_ANY_EXHDR(board);
-	//elog(INFO, "BEFORE BEFORE SEND");
-	//elog(INFO, "%s", (char *) VARDATA_ANY(board));
 	
 	initStringInfo(&buf);
 	pq_begintypsend(&buf);
-	//elog(INFO, "BEFORE SEND %s", (char *) VARDATA_ANY(board));
 	
 	pq_sendint(&buf,nchars, sizeof(int));
 	pq_sendtext(&buf,VARDATA_ANY(board), nchars);
-	//elog(INFO, "AFTER SEND");
-	//pq_sendtext(&buf, game->moves, nchars);
 	PG_FREE_IF_COPY(board, 0);
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
-/* PG_FUNCTION_INFO_V1(chessboard_cast_from_text);
+
+PG_FUNCTION_INFO_V1(chessboard_cast_from_text);
 Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 {  	
 	text *txt = PG_GETARG_TEXT_P(0);
 	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
-
-	
     PG_RETURN_POINTER(chessboard_parse(str)); 
+}
 
-} */
-
-/* PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
+PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
 Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
 {
   chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
-  char *result = psprintf("%s %c %s %s %d %d", cb->board, cb->color, cb->castling, cb->enpassant, cb->halfmove, cb->fullmove);
+  text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cb) + VARHDRSZ);
+  memcpy(VARDATA(result), VARDATA_ANY(cb), VARSIZE_ANY_EXHDR(cb));
   PG_RETURN_CSTRING(result);
-} */
+} 
 
-/* PG_FUNCTION_INFO_V1(chessboard_cast_to_text);
-Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
+PG_FUNCTION_INFO_V1(chessboard_constructor);
+Datum
+chessboard_constructor(PG_FUNCTION_ARGS)
 {
-  chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
-  PG_RETURN_CSTRING(cb->board);
-} */
-
+	char *input = PG_GETARG_CSTRING(0);
+	PG_RETURN_CHESSBOARD_P(chessboard_parse(input));
+}
 //*************************************FUNCTIONS*************************************
 PG_FUNCTION_INFO_V1(getBoard);
 Datum
@@ -366,12 +274,11 @@ getBoard(PG_FUNCTION_ARGS) {
 
 	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
-	if (halfMovesNbr > SCL_recordLength(r)){
+	else if (halfMovesNbr > SCL_recordLength(r)){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
 
 	SCL_recordApply(r, board, halfMovesNbr);
 
-	
 	SCL_boardToFEN(board, fenstring);
 	result = chessboard_make(fenstring);
 	PG_FREE_IF_COPY(chgame, 0);
@@ -384,16 +291,14 @@ getFirstMoves(PG_FUNCTION_ARGS){
 	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
 	int halfMovesNbr = PG_GETARG_INT32(1);
 	char *firstMoves;
-   /* 	SCL_Record r;
-    SCL_recordInit(r);
-    SCL_recordFromPGN(r, chgame->moves); */ 
+
 	int nb_move = countMoves(VARDATA_ANY(chgame));
 	
    	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
-	if (halfMovesNbr > nb_move){
-		//ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
-		halfMovesNbr = nb_move;}
+	else if (halfMovesNbr > nb_move){
+		halfMovesNbr = nb_move;
+	}
     
 	firstMoves = cutFirstMoves(VARDATA_ANY(chgame), halfMovesNbr);
     chessgame* result = chessgame_make(firstMoves);
@@ -405,12 +310,11 @@ getFirstMoves(PG_FUNCTION_ARGS){
 PG_FUNCTION_INFO_V1(hasOpening);
 Datum
 hasOpening(PG_FUNCTION_ARGS) {
-
 	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
 	chessgame *game2 = (chessgame*)PG_GETARG_CHESSGAME_P(1);
 	char* game1FirstMoves;
-	int nb_move1 = countMoves(game->moves);
-	int nb_move2 = countMoves(game2->moves);
+	int nb_move1 = countMoves(VARDATA_ANY(game));
+	int nb_move2 = countMoves(VARDATA_ANY(game2));
 
 	if (nb_move1 < nb_move2 ){
 		PG_FREE_IF_COPY(game, 0);
@@ -418,10 +322,9 @@ hasOpening(PG_FUNCTION_ARGS) {
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The second game (opening) should be shorter than the first game (full game))")));
 	}
  
-    game1FirstMoves = cutFirstMoves(game->moves, nb_move2);
-    //chessgame *comparator_cut = chessgame_make(firstMoves);
+    game1FirstMoves = cutFirstMoves(VARDATA_ANY(game), nb_move2);
 	
-    if (strcmp(game1FirstMoves, game2->moves) == 0){
+    if (strcmp(game1FirstMoves, VARDATA_ANY(game2)) == 0){
 		PG_FREE_IF_COPY(game, 0);
 		PG_FREE_IF_COPY(game2, 1);
 		free(game1FirstMoves);
@@ -433,40 +336,3 @@ hasOpening(PG_FUNCTION_ARGS) {
 	free(game1FirstMoves);
     PG_RETURN_BOOL(false);
 }
-
-/* PG_FUNCTION_INFO_V1(hasBoard);
-Datum
-hasBoard(PG_FUNCTION_ARGS) {
-	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
-	chessboard *cb = (chessboard *)PG_GETARG_CHESSBOARD_P(1);
-	uint32_t halfMovesNbr =  PG_GETARG_INT32(2);
-
-	SCL_Record	r;
-	SCL_Board	SCLBoard;
-	SCL_recordInit(r);
-    SCL_recordFromPGN(r, game->moves); 
-	
-	char* copyBoard = strdup(cb->board);
-	copyBoard = strtok(copyBoard, " ");
-
-	if (SCL_recordLength(r) < halfMovesNbr)
-		halfMovesNbr = SCL_recordLength(r);	
-	char fenString[SCL_FEN_MAX_LENGTH];
-	for(int i = 0; i < halfMovesNbr; i++)
-	{
-		SCL_recordApply(r, SCLBoard, i);
-		SCL_boardToFEN(SCLBoard, fenString);
-		//elog(INFO, "fenString: %s", fenString);
-		//elog(INFO, "cb->board: %s", cb->board);
-		if (strcmp(strtok(fenString," "), copyBoard) == 0){
-			PG_FREE_IF_COPY(game, 0);
-		    PG_FREE_IF_COPY(cb, 1);
-			free(copyBoard);
-			PG_RETURN_BOOL(true);
-		}
-	}
-	PG_FREE_IF_COPY(game, 0);
-	PG_FREE_IF_COPY(cb, 1);
-	free(copyBoard);
-    PG_RETURN_BOOL(false);
-} */

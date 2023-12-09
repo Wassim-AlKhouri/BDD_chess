@@ -4,9 +4,7 @@
 /******************************************************************************
  * chessboard
  ******************************************************************************/
-
 /* Input/Output */
-
 CREATE OR REPLACE FUNCTION chessboard_in(cstring)
   RETURNS chessboard
   AS 'MODULE_PATHNAME'
@@ -36,7 +34,7 @@ CREATE TYPE chessboard (
   alignment      = double
 );
 
-/* CREATE OR REPLACE FUNCTION chessboard(text)
+CREATE OR REPLACE FUNCTION chessboard(text)
   RETURNS chessboard
   AS 'MODULE_PATHNAME', 'chessboard_cast_from_text'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -47,19 +45,16 @@ CREATE OR REPLACE FUNCTION text(chessboard)
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE CAST (text as chessboard) WITH FUNCTION chessboard(text) AS IMPLICIT;
-CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard); */
+CREATE CAST (chessboard as text) WITH FUNCTION text(chessboard);
 
 /* constructor */
-
-CREATE FUNCTION chessboard(text)
+CREATE FUNCTION chessboard(cstring)
   RETURNS chessboard
   AS 'MODULE_PATHNAME', 'chessboard_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
 /*****************************************************************************
   * chessgame
   *****************************************************************************/
-
 /* Input/Output */
 CREATE OR REPLACE FUNCTION chessgame_in(cstring)
   RETURNS chessgame
@@ -90,7 +85,7 @@ CREATE TYPE chessgame (
   alignment      = double
 );
 
-/* CREATE OR REPLACE FUNCTION chessgame(text)
+CREATE OR REPLACE FUNCTION chessgame(text)
   RETURNS chessgame
   AS 'MODULE_PATHNAME', 'chessgame_cast_from_text'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
@@ -102,13 +97,12 @@ CREATE OR REPLACE FUNCTION text(chessgame)
 
 CREATE CAST (text as chessgame) WITH FUNCTION chessgame(text) AS IMPLICIT;
 CREATE CAST (chessgame as text) WITH FUNCTION text(chessgame);
- */
 
-CREATE FUNCTION chessgame(text)
+/* constructor */
+CREATE FUNCTION chessgame(cstring)
   RETURNS chessgame
   AS 'MODULE_PATHNAME', 'chessgame_constructor'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
 /*****************************************************************************
   * functions
   *****************************************************************************/
@@ -127,18 +121,17 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
   AS 'MODULE_PATHNAME', 'hasOpening'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
 
-/* CREATE FUNCTION hasBoard(chessgame, chessboard, int)
-  RETURNS boolean
-  AS 'MODULE_PATHNAME', 'hasBoard'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; */
-
-  
+CREATE FUNCTION hasBoard(chessgame, chessboard, int)
+    RETURNS boolean
+    AS 
+    $$
+      SELECT $1 @> regexp_replace($2::text, '\d+$', $3::text)::chessboard
+    $$ 
+    LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 /*****************************************************************************
   * GIN
   *****************************************************************************/
    /* Operator */
-  
-
    CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
     RETURNS boolean
     AS 'MODULE_PATHNAME'
@@ -149,15 +142,6 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
     RIGHTARG = chessboard,
     PROCEDURE = gin_contains_chessboard
   );
-
-  /* CREATE FUNCTION hasBoard(chessgame, chessboard, int)
-  RETURNS boolean
-  AS 
-  $$
-    SELECT $1 @> $2
-  $$ 
-  LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE; */
-
 
   /* Support functions */
   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)
@@ -188,24 +172,10 @@ CREATE FUNCTION hasOpening(chessgame, chessgame)
     FUNCTION        2       gin_extract_value_chessgame(chessgame),
     FUNCTION        3       gin_extract_query_chessgame(internal, internal, internal, internal, internal, internal, internal),
     FUNCTION        4       gin_consistent_chessgame(internal, internal, internal, internal, internal, internal, internal, internal);
-
-    
-  CREATE FUNCTION hasBoard(chessgame, chessboard, int)
-    RETURNS boolean
-    AS 
-    $$
-      --SELECT regexp_replace($2::text, '\d+$', $3::text)::chessboard
-      SELECT $1 @> regexp_replace($2::text, '\d+$', $3::text)::chessboard
-      --SELECT $1 @> $2
-    $$ 
-    LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
-    
 /******************************************************************************
  * B-Tree
  ******************************************************************************/
-
 /* B-Tree comparison functions */
-
 CREATE OR REPLACE FUNCTION chessgame_abs_eq(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
@@ -230,12 +200,8 @@ CREATE OR REPLACE FUNCTION chessgame_abs_ge(chessgame, chessgame)
   RETURNS boolean
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
-
-
 /******************************************************************************/
-
 /* B-Tree comparison operators */
-
 CREATE OPERATOR = (
   LEFTARG = chessgame, RIGHTARG = chessgame,
   PROCEDURE = chessgame_abs_eq,
@@ -261,20 +227,14 @@ CREATE OPERATOR > (
   PROCEDURE = chessgame_abs_gt,
   COMMUTATOR = <, NEGATOR = <=
 );
-
 /******************************************************************************/
-
 /* B-Tree support function */
-
 CREATE OR REPLACE FUNCTION chessgame_abs_cmp(chessgame, chessgame)
   RETURNS integer
   AS 'MODULE_PATHNAME'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
-
 /******************************************************************************/
-
 /* B-Tree operator class */
-
 CREATE OPERATOR CLASS chessgame_abs_ops
 DEFAULT FOR TYPE chessgame USING btree
 AS
@@ -284,5 +244,4 @@ AS
         OPERATOR        4       >= ,
         OPERATOR        5       >  ,
         FUNCTION        1       chessgame_abs_cmp(chessgame, chessgame);  
-
 /******************************************************************************/

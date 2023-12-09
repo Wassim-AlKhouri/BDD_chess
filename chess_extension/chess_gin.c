@@ -13,7 +13,7 @@ static text **generateboards(chessgame *game, int32_t* nb_board)
     char* truncatedBoard;
 
 	SCL_recordInit(r);
-    SCL_recordFromPGN(r, game->moves);
+    SCL_recordFromPGN(r, VARDATA_ANY(game));
 	*nb_board = (int32_t) SCL_recordLength(r) + 1;
 	
 	allboards = (text **) palloc(sizeof(text *) * (*nb_board));
@@ -24,7 +24,6 @@ static text **generateboards(chessgame *game, int32_t* nb_board)
 		SCL_boardToFEN(board, fenString);
         truncatedBoard = strtok(fenString, " ");
         allboards[i] = (text *) palloc(VARHDRSZ + strlen(truncatedBoard) + 1); 
-        //allboards[i] = cstring_to_text(truncatedBoard);
         SET_VARSIZE(allboards[i], VARHDRSZ + strlen(truncatedBoard) + 1);
         memcpy(VARDATA(allboards[i]), truncatedBoard, strlen(truncatedBoard) + 1);
 	}
@@ -40,13 +39,13 @@ gin_contains_chessboard(PG_FUNCTION_ARGS)
     char* truncatedBoard;
     // we need to compare the first part of the string (the board) and not the whole string
     // but strtok modifies the string so we need to work with a copy of it
-    char* copyBoard = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(b));
+    char* copyB = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(b));
     text** boards;
     bool res;
     int nkeys;
     
-    memcpy(copyBoard, VARDATA(b), VARSIZE_ANY_EXHDR(b));
-    truncatedBoard = strtok(copyBoard, " ");
+    memcpy(copyB, VARDATA_ANY(b), VARSIZE_ANY_EXHDR(b));
+    truncatedBoard = strtok(copyB, " ");
     boards = generateboards(a, &nkeys);
     res = false;
 
@@ -61,56 +60,14 @@ gin_contains_chessboard(PG_FUNCTION_ARGS)
         }
     }
 
-    free(copyBoard);
+    free(copyB);
     for (int i = 0; i < nkeys; i++) pfree(boards[i]);
     pfree(boards);
 
     PG_FREE_IF_COPY(a, 0);
     PG_FREE_IF_COPY(b, 1);
-/*     ////elog(INFO, "CONTAINS");
-    ////elog(INFO, "moves: %s", a->moves);
-    ////elog(INFO, "board: %s", b->board);
-    ////elog(INFO, "res: %d", res); */
     PG_RETURN_BOOL(res);
 }
-
-/* PG_FUNCTION_INFO_V1(hasBoard);
-Datum
-hasBoard(PG_FUNCTION_ARGS) {
-	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
-	chessboard *cb = (chessboard *)PG_GETARG_CHESSBOARD_P(1);
-	uint32_t halfMovesNbr =  PG_GETARG_INT32(2);
-
-	SCL_Record	r;
-	SCL_Board	SCLBoard;
-	SCL_recordInit(r);
-    SCL_recordFromPGN(r, game->moves); 
-	
-	char* copyBoard = strdup(cb->board);
-	copyBoard = strtok(copyBoard, " ");
-
-	if (SCL_recordLength(r) < halfMovesNbr)
-		halfMovesNbr = SCL_recordLength(r);	
-	char fenString[SCL_FEN_MAX_LENGTH];
-	for(int i = 0; i < halfMovesNbr; i++)
-	{
-		SCL_recordApply(r, SCLBoard, i);
-		SCL_boardToFEN(SCLBoard, fenString);
-		////elog(INFO, "fenString: %s", fenString);
-		////elog(INFO, "cb->board: %s", cb->board);
-		if (strcmp(strtok(fenString," "), copyBoard) == 0){
-			PG_FREE_IF_COPY(game, 0);
-		    PG_FREE_IF_COPY(cb, 1);
-			free(copyBoard);
-			PG_RETURN_BOOL(true);
-		}
-	}
-	PG_FREE_IF_COPY(game, 0);
-	PG_FREE_IF_COPY(cb, 1);
-	free(copyBoard);
-    PG_RETURN_BOOL(false);
-} */
-
 
 PG_FUNCTION_INFO_V1(gin_compare_chessgame);
 Datum 
@@ -118,17 +75,13 @@ gin_compare_chessgame(PG_FUNCTION_ARGS)
 {
     chessboard *a = (chessboard *) PG_GETARG_CHESSBOARD_P(0);
     chessboard *b = (chessboard *) PG_GETARG_CHESSBOARD_P(1);
-    
-    ////elog(INFO, "COMPARE");
-    ////elog(INFO, "a->board: %s", a->board);
-    ////elog(INFO, "b->board: %s", b->board);
 
     char* copya = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(a));
-    memcpy(copya, VARDATA(a), VARSIZE_ANY_EXHDR(a));
+    memcpy(copya, VARDATA_ANY(a), VARSIZE_ANY_EXHDR(a));
     char* truncatedBoarda = strtok(copya, " ");
 
     char* copyb = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(b));
-    memcpy(copyb, VARDATA(b), VARSIZE_ANY_EXHDR(b));
+    memcpy(copyb, VARDATA_ANY(b), VARSIZE_ANY_EXHDR(b));
     char* truncatedBoardb = strtok(copyb, " ");
 
     int32_t res = strcmp(truncatedBoarda, truncatedBoardb);
@@ -145,8 +98,6 @@ Datum
 gin_extract_value_chessgame(PG_FUNCTION_ARGS)
 {
     chessgame *game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
-    /* ////elog(INFO, "EXTRACT VALUE");
-    ////elog(INFO, "game->moves: %s", game->moves); */
     int32_t *nkeys = (int32_t *) PG_GETARG_POINTER(1);
     text** boards = generateboards(game, nkeys); // à définir
     PG_FREE_IF_COPY(game, 0);
@@ -159,8 +110,6 @@ gin_extract_query_chessgame(PG_FUNCTION_ARGS)
 {
     // there is only one strategy (chessgame @> chessboard)
     chessboard *query = (chessboard *) PG_GETARG_CHESSBOARD_P(0); // chessboard
-    /* ////elog(INFO, "EXTRACT QUERY");
-    //elog(INFO, "query->board: %s", query->board); */
 
     char* copy = (char *) malloc(sizeof(char) * VARSIZE_ANY_EXHDR(query));
     memcpy(copy, VARDATA_ANY(query), VARSIZE_ANY_EXHDR(query));
@@ -170,7 +119,6 @@ gin_extract_query_chessgame(PG_FUNCTION_ARGS)
     while (copy[i - 1] <= '9' && copy[i - 1]>= '1')
         i--;
     int nb_halfmove = atoi(copy + i);
-    //elog (INFO, "!!!!!!!!!!nb_halfmove: %d", nb_halfmove);
 
 
     int32_t *nkeys = (int32_t *) PG_GETARG_POINTER(1);
@@ -184,7 +132,6 @@ gin_extract_query_chessgame(PG_FUNCTION_ARGS)
     *searchMode = GIN_SEARCH_MODE_DEFAULT;
     *nkeys = 1;
 
-    //extra_data = (int **) palloc(sizeof(int*));
     extra_data[0] = (int *) palloc(sizeof(int));
     extra_data[0][0] = nb_halfmove;
 
@@ -203,10 +150,7 @@ gin_consistent_chessgame(PG_FUNCTION_ARGS)
     int16_t strategyNumber = PG_GETARG_INT16(1);
     text *query = (text *) PG_GETARG_TEXT_P(2);
     int32_t nkeys = PG_GETARG_INT32(3);
-    //elog(INFO, "!!!!!!!!!!before extra");
     int *extra_data = (int *) PG_GETARG_POINTER(4); // extra_data is the number of halfmoves that the board should be in
-    //elog(INFO, "!!!!!!!!!!after extra");
-    //elog(INFO, "!!!!!!!!!!: %d", extra_data[0]);
     bool *recheck = (bool *) PG_GETARG_POINTER(5); // not used (no recheck)
     Datum *queryKeys = (Datum *) PG_GETARG_POINTER(6); // not used
     bool *nullFlags = (bool *) PG_GETARG_POINTER(7); // not used (no nulls)

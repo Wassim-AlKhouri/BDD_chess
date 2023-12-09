@@ -5,8 +5,6 @@
 #include "utils/builtins.h"
 #include "libpq/pqformat.h"
 #include "access/gin.h"
-//#include "smallchesslib.h"
-
 
 typedef	struct
 {
@@ -20,7 +18,6 @@ typedef	struct
 	char moves[FLEXIBLE_ARRAY_MEMBER];
 } chessgame;
 
-//char **generateboards(char *moves, int* nb_move);
 bool isValidSan(const char* game);
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))

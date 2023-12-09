@@ -93,7 +93,7 @@ bool isValidSan(const char* game){
 	//check if the string is in SAN format
 	while (token != NULL){
 		if(strlen(token) < 2){
-			////elog(ERROR, "Invalid move: %s", token);
+			elog(ERROR, "Invalid move: %s", token);
 			free(copy);
 			return false;
 		}
@@ -101,7 +101,7 @@ bool isValidSan(const char* game){
 		else if (token[strlen(token)-1] == '.'){ 
 			token[strlen(token)-1] = '\0';
 			if (!isPositiveInteger(token)) {
-				////elog(ERROR, "Invalid move number: %s", token);
+				elog(ERROR, "Invalid move number: %s", token);
 				free(copy);
 				return false; 
 			}

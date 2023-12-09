@@ -21,22 +21,13 @@
 static int
 chessgame_abs_cmp_internal(chessgame *a, chessgame *b)
 {
-   ////elog(ERROR, "chessgame_abs_cmp_internal: %s", "Not implemented yet");
     int result = strcmp(a->moves, b->moves);
-    /* if (result == 0){
-        if (nbMoves_game1 < nbMoves_game2){return -1;}
-        else if (nbMoves_game1 > nbMoves_game2){return 1;}
-        else{return 0;}
-    }
-    else{return result;} */
-    ////elog(ERROR, "chessgame_abs_cmp_internal: %s", "implemented yet");
     return result;
 }
 
 
 /*****************************************************************************/
 
-////elog(ERROR, "chessgame_abs_eq: %s", "Not implemented yet");
 PG_FUNCTION_INFO_V1(chessgame_abs_eq);
 Datum
 chessgame_abs_eq(PG_FUNCTION_ARGS)
@@ -48,9 +39,6 @@ chessgame_abs_eq(PG_FUNCTION_ARGS)
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
-////elog(ERROR, "chessgame_abs_eq: %s", "implemented yet");
-
-////elog(ERROR, "chessgame_abs_ne: %s", "Not implemented yet");
 
 PG_FUNCTION_INFO_V1(chessgame_abs_ne);
 Datum
@@ -63,8 +51,6 @@ chessgame_abs_ne(PG_FUNCTION_ARGS)
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
-
-////elog(ERROR, "chessgame_abs_ne: %s", "implemented yet");
 
 PG_FUNCTION_INFO_V1(chessgame_abs_lt);
 Datum
@@ -125,5 +111,3 @@ chessgame_abs_cmp(PG_FUNCTION_ARGS)
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_INT32(result_cmpr);
 }
-
-/*****************************************************************************/
