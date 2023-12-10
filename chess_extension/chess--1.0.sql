@@ -116,10 +116,18 @@ CREATE FUNCTION getFirstMoves(chessgame, int)
   AS 'MODULE_PATHNAME', 'getFirstMoves'
   LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
+CREATE FUNCTION AddLastMove(chessgame)
+  RETURNS chessgame
+  AS 'MODULE_PATHNAME', 'AddLastMove'
+  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
+
 CREATE FUNCTION hasOpening(chessgame, chessgame)
   RETURNS boolean
-  AS 'MODULE_PATHNAME', 'hasOpening'
-  LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE; 
+  AS
+  $$
+    SELECT $1 >= $2 AND $1 <= AddLastMove($2)
+  $$
+  LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 
 CREATE FUNCTION hasBoard(chessgame, chessboard, int)
     RETURNS boolean

@@ -10,7 +10,6 @@ char SAN_str [4096];
 
 static	chessgame* chessgame_make(char *SAN_moves)
 {
-	int	i = 0;
 	chessgame	*game;
 
 	game = (chessgame *) palloc0(VARHDRSZ + strlen(SAN_moves) + 1);
@@ -270,12 +269,12 @@ getBoard(PG_FUNCTION_ARGS) {
 	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
 	int halfMovesNbr = PG_GETARG_INT32(1);
 	chessboard* result;
+	char fenstring[SCL_FEN_MAX_LENGTH];
 
 	SCL_Record	r;
 	SCL_Board	board;
 	SCL_recordInit(r);
     SCL_recordFromPGN(r, VARDATA_ANY(chgame)); 
-	char fenstring[SCL_FEN_MAX_LENGTH];
 
 	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
@@ -296,7 +295,7 @@ getFirstMoves(PG_FUNCTION_ARGS){
 	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
 	int halfMovesNbr = PG_GETARG_INT32(1);
 	char *firstMoves;
-
+	chessgame* result;
 	int nb_move = countMoves(VARDATA_ANY(chgame));
 	
    	if (halfMovesNbr < 0){
@@ -306,38 +305,23 @@ getFirstMoves(PG_FUNCTION_ARGS){
 	}
     
 	firstMoves = cutFirstMoves(VARDATA_ANY(chgame), halfMovesNbr);
-    chessgame* result = chessgame_make(firstMoves);
+    result = chessgame_make(firstMoves);
 	//free(firstMoves);
 	PG_FREE_IF_COPY(chgame, 0);
     PG_RETURN_CHESSGAME_P(result);
 }
 
-PG_FUNCTION_INFO_V1(hasOpening);
+PG_FUNCTION_INFO_V1(AddLastMove);
 Datum
-hasOpening(PG_FUNCTION_ARGS) {
-	chessgame *game = (chessgame *)PG_GETARG_CHESSGAME_P(0);
-	chessgame *game2 = (chessgame*)PG_GETARG_CHESSGAME_P(1);
-	char* game1FirstMoves;
-	int nb_move1 = countMoves(VARDATA_ANY(game));
-	int nb_move2 = countMoves(VARDATA_ANY(game2));
-
-	if (nb_move1 < nb_move2 ){
-		PG_FREE_IF_COPY(game, 0);
-		PG_FREE_IF_COPY(game2, 1);
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The second game (opening) should be shorter than the first game (full game))")));
-	}
- 
-    game1FirstMoves = cutFirstMoves(VARDATA_ANY(game), nb_move2);
-	
-    if (strcmp(game1FirstMoves, VARDATA_ANY(game2)) == 0){
-		PG_FREE_IF_COPY(game, 0);
-		PG_FREE_IF_COPY(game2, 1);
-		free(game1FirstMoves);
-        PG_RETURN_BOOL(true);
-
-    }
-	PG_FREE_IF_COPY(game, 0);
-	PG_FREE_IF_COPY(game2, 1);
-	free(game1FirstMoves);
-    PG_RETURN_BOOL(false);
+AddLastMove(PG_FUNCTION_ARGS){
+	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
+	// the move to add is hxh8=R+ (highest lexicographic order)
+	char *modifiedGame = (char *) palloc0(VARSIZE_ANY_EXHDR(chgame) + 8);
+	chessgame *result;
+	strcpy(modifiedGame, VARDATA_ANY(chgame));
+	modifiedGame = strcat(modifiedGame, " hxh8=R+");
+	result = chessgame_parse(modifiedGame);
+	pfree(modifiedGame);
+	PG_FREE_IF_COPY(chgame, 0);
+	PG_RETURN_CHESSGAME_P(result);
 }
