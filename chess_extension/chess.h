@@ -18,7 +18,8 @@ typedef	struct
 	char moves[FLEXIBLE_ARRAY_MEMBER];
 } chessgame;
 
-bool isValidSan(const char* game);
+bool 	isValidSan(const char* game);
+char	*formate_SAN(const char *str);
 
 #define DatumGetchessboardP(X)  ((chessboard *) DatumGetPointer(X))
 #define chessboardPGetDatum(X)  PointerGetDatum(X)

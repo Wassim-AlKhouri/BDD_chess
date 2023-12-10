@@ -8,7 +8,7 @@ PG_MODULE_MAGIC;
 
 char SAN_str [4096];
 
-static	chessgame* chessgame_make(const char *SAN_moves)
+static	chessgame* chessgame_make(char *SAN_moves)
 {
 	int	i = 0;
 	chessgame	*game;
@@ -18,7 +18,9 @@ static	chessgame* chessgame_make(const char *SAN_moves)
 		if (SAN_moves != NULL && strlen(SAN_moves) > 0) {
 			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) + 1);
 			memcpy(VARDATA(game), SAN_moves, VARSIZE_ANY_EXHDR(game));
+			free(SAN_moves);
 		} else {
+			free(SAN_moves);
 			pfree(game);
 			ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("can't create a chessgame from NULL")));
 		}
@@ -41,21 +43,24 @@ static void putCharStr(char c)
   *(s + 1) = '\0';
 }
 
+
 static chessgame* chessgame_parse(const char *SAN_moves)
 {
 	//check if the string is in SAN format
-	SCL_Record r;
+	/* SCL_Record r;
 	SCL_recordInit(r);
 	SCL_recordFromPGN(r, SAN_moves);
 	memset(SAN_str, '\0', 4096);
-	SCL_printPGN(r, putCharStr, 0);
-
-	if (SAN_str[strlen(SAN_str) - 1] == '*' || SAN_str[strlen(SAN_str) - 1] == '#')
-		SAN_str[strlen(SAN_str) - 1] = '\0';
-	if (!isValidSan(SAN_str)){
+	SCL_printPGN(r, putCharStr, 0); */
+	char	*formated_SAN;
+	if (!SAN_moves || SAN_moves[0] == '\0')
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should not be null")));
+	formated_SAN = formate_SAN(SAN_moves);
+	if (!isValidSan(formated_SAN)){
+		free(formated_SAN);
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in SAN format")));
 	 }
-	return (chessgame_make(SAN_str));
+	return (chessgame_make(formated_SAN));
 }
 
 static char* cutFirstMoves(char* moves, int halfMovesNbr){
@@ -138,6 +143,23 @@ chessgame_send(PG_FUNCTION_ARGS)
 	PG_RETURN_BYTEA_P(pq_endtypsend(&buf));
 }
 
+PG_FUNCTION_INFO_V1(chessgame_cast_from_text);
+Datum chessgame_cast_from_text(PG_FUNCTION_ARGS)
+{  	
+	text *txt = PG_GETARG_TEXT_P(0);
+	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
+    PG_RETURN_POINTER(chessgame_parse(str)); 
+}
+
+PG_FUNCTION_INFO_V1(chessgame_cast_to_text);
+Datum chessgame_cast_to_text(PG_FUNCTION_ARGS)
+{
+  chessgame *cg = PG_GETARG_CHESSGAME_P(0);
+  text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cg) + VARHDRSZ);
+  memcpy(VARDATA(result), VARDATA_ANY(cg), VARSIZE_ANY_EXHDR(cg));
+  PG_RETURN_CSTRING(result);
+} 
+
 PG_FUNCTION_INFO_V1(chessgame_constructor);
 Datum 
 chessgame_constructor(PG_FUNCTION_ARGS)
@@ -165,23 +187,6 @@ chessboard_parse(const char* FEN_board){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in FENformat")));
 	return(chessboard_make(FEN_board));
 }
-
-PG_FUNCTION_INFO_V1(chessgame_cast_from_text);
-Datum chessgame_cast_from_text(PG_FUNCTION_ARGS)
-{  	
-	text *txt = PG_GETARG_TEXT_P(0);
-	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
-    PG_RETURN_POINTER(chessgame_parse(str)); 
-}
-
-PG_FUNCTION_INFO_V1(chessgame_cast_to_text);
-Datum chessgame_cast_to_text(PG_FUNCTION_ARGS)
-{
-  chessgame *cg = PG_GETARG_CHESSGAME_P(0);
-  text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cg) + VARHDRSZ);
-  memcpy(VARDATA(result), VARDATA_ANY(cg), VARSIZE_ANY_EXHDR(cg));
-  PG_RETURN_CSTRING(result);
-} 
 
 //************SQL FUNCTIONS************
 PG_FUNCTION_INFO_V1(chessboard_in);
@@ -302,7 +307,7 @@ getFirstMoves(PG_FUNCTION_ARGS){
     
 	firstMoves = cutFirstMoves(VARDATA_ANY(chgame), halfMovesNbr);
     chessgame* result = chessgame_make(firstMoves);
-	free(firstMoves);
+	//free(firstMoves);
 	PG_FREE_IF_COPY(chgame, 0);
     PG_RETURN_CHESSGAME_P(result);
 }

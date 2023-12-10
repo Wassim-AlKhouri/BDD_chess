@@ -1,6 +1,6 @@
 #!/bin/bash
 
-input_file="test2.pgn"
+input_file="test3.pgn"
 
 # Use awk to separate games and store them in an array
 mapfile -t games < <(awk -v RS= '{gsub(/\n/," ")}1' "$input_file")

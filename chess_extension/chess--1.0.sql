@@ -125,17 +125,17 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
     RETURNS boolean
     AS 
     $$
-      SELECT $1 @> regexp_replace($2::text, '\d+$', $3::text)::chessboard
+      SELECT getFirstMoves((SELECT $1 where $1 @> $2)::chessgame,$3) @> $2
     $$ 
     LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE;
 /*****************************************************************************
   * GIN
   *****************************************************************************/
    /* Operator */
-   CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
+  CREATE OR REPLACE FUNCTION gin_contains_chessboard(chessgame, chessboard)
     RETURNS boolean
     AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
   
   CREATE OPERATOR @> (
     LEFTARG = chessgame, 
@@ -147,22 +147,22 @@ CREATE FUNCTION hasBoard(chessgame, chessboard, int)
   CREATE OR REPLACE FUNCTION gin_compare_chessgame(chessboard, chessboard)
     RETURNS integer
     AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
   
   CREATE OR REPLACE FUNCTION gin_extract_value_chessgame(chessgame)
     RETURNS text[][]
     AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
   CREATE OR REPLACE FUNCTION gin_extract_query_chessgame(internal, internal, internal, internal, internal, internal, internal)
     RETURNS text[][]
     AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
   CREATE OR REPLACE FUNCTION gin_consistent_chessgame(internal, internal, internal, internal, internal, internal, internal, internal)
     RETURNS boolean
     AS 'MODULE_PATHNAME'
-    LANGUAGE C IMMUTABLE PARALLEL SAFE;
+    LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 
   /* Operator class */
   CREATE OPERATOR CLASS gin_chessgame_ops
