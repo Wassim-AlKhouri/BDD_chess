@@ -17,9 +17,14 @@
 #include "smallchesslib.h"
 
 
-
+/*
+* Function used to compare two chessgames
+* @param a: the first chessgame
+* @param b: the second chessgame
+* @return: 0 if a = b, -1 if a < b, 1 if a > b (lexicographic order)
+*/
 static int
-chessgame_abs_cmp_internal(chessgame *a, chessgame *b)
+chessgame_cmp_internal(chessgame *a, chessgame *b)
 {
     int result = strcmp(a->moves, b->moves);
     return result;
@@ -27,86 +32,89 @@ chessgame_abs_cmp_internal(chessgame *a, chessgame *b)
 
 
 /*****************************************************************************/
-
-PG_FUNCTION_INFO_V1(chessgame_abs_eq);
+/* Btree sorting functions for chessgame type */
+/*
+* 
+*/
+PG_FUNCTION_INFO_V1(chessgame_eq);
 Datum
-chessgame_abs_eq(PG_FUNCTION_ARGS)
+chessgame_eq(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) == 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) == 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_ne);
+PG_FUNCTION_INFO_V1(chessgame_ne);
 Datum
-chessgame_abs_ne(PG_FUNCTION_ARGS)
+chessgame_ne(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) != 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) != 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_lt);
+PG_FUNCTION_INFO_V1(chessgame_lt);
 Datum
-chessgame_abs_lt(PG_FUNCTION_ARGS)
+chessgame_lt(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) < 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) < 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_le);
+PG_FUNCTION_INFO_V1(chessgame_le);
 Datum
-chessgame_abs_le(PG_FUNCTION_ARGS)
+chessgame_le(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) <= 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) <= 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_gt);
+PG_FUNCTION_INFO_V1(chessgame_gt);
 Datum
-chessgame_abs_gt(PG_FUNCTION_ARGS)
+chessgame_gt(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) > 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) > 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_ge);
+PG_FUNCTION_INFO_V1(chessgame_ge);
 Datum
-chessgame_abs_ge(PG_FUNCTION_ARGS)
+chessgame_ge(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2) >= 0;
+  int result_cmpr =  chessgame_cmp_internal(game1, game2) >= 0;
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_BOOL(result_cmpr);
 }
 
-PG_FUNCTION_INFO_V1(chessgame_abs_cmp);
+PG_FUNCTION_INFO_V1(chessgame_cmp);
 Datum
-chessgame_abs_cmp(PG_FUNCTION_ARGS)
+chessgame_cmp(PG_FUNCTION_ARGS)
 {
   chessgame *game1 = (chessgame *)PG_GETARG_CHESSGAME_P(0);
   chessgame *game2 = (chessgame *)PG_GETARG_CHESSGAME_P(1);
-  int result_cmpr =  chessgame_abs_cmp_internal(game1, game2);
+  int result_cmpr =  chessgame_cmp_internal(game1, game2);
   PG_FREE_IF_COPY(game1, 0);
   PG_FREE_IF_COPY(game2, 1);
   PG_RETURN_INT32(result_cmpr);

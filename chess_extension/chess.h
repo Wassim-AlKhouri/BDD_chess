@@ -1,3 +1,7 @@
+/*
+* Authors: Thomas Vray, Bryan François, Nicolas Blanquez-Yeste and Wassim Al Khouri
+*/
+
 #ifndef CHESS_H
 # define CHESS_H
 #include "postgres.h"

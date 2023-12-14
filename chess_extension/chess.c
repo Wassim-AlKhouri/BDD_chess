@@ -6,13 +6,14 @@ PG_MODULE_MAGIC;
 
 //************INTERNAL FUNCTIONS************
 
-char SAN_str [4096];
-
+/*
+* Function used to create a chessgame from a SAN string
+* @param SAN_moves the SAN string
+* @return a chessgame
+*/
 static	chessgame* chessgame_make(char *SAN_moves)
 {
-	chessgame	*game;
-
-	game = (chessgame *) palloc0(VARHDRSZ + strlen(SAN_moves) + 1);
+	chessgame	*game = (chessgame *) palloc0(VARHDRSZ + strlen(SAN_moves) + 1);
 	if (game != NULL) {
 		if (SAN_moves != NULL && strlen(SAN_moves) > 0) {
 			SET_VARSIZE(game, VARHDRSZ + strlen(SAN_moves) + 1);
@@ -29,32 +30,19 @@ static	chessgame* chessgame_make(char *SAN_moves)
 	return(game);
 }
 
-static void putCharStr(char c)
-{
-  char *s = SAN_str;
-  while (*s != 0){
-	if (s - SAN_str >= 4095){
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE),errmsg("string too long")));
-	}
-    s++;
-  }
-  *s = c;
-  *(s + 1) = '\0';
-}
-
-
+/*
+* Function used to make sure the string is in San format. If true chessgame_make is called
+* @param str the string to check
+* @return a chessgame if the string is in SAN format, launches an error otherwise
+*/
 static chessgame* chessgame_parse(const char *SAN_moves)
 {
-	//check if the string is in SAN format
-	/* SCL_Record r;
-	SCL_recordInit(r);
-	SCL_recordFromPGN(r, SAN_moves);
-	memset(SAN_str, '\0', 4096);
-	SCL_printPGN(r, putCharStr, 0); */
 	char	*formated_SAN;
 	if (!SAN_moves || SAN_moves[0] == '\0')
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should not be null")));
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should not be null"))); 
 	formated_SAN = formate_SAN(SAN_moves);
+	if (!formated_SAN || formated_SAN[0] == '\0')
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should not be empty")));
 	if (!isValidSan(formated_SAN)){
 		free(formated_SAN);
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in SAN format")));
@@ -62,6 +50,12 @@ static chessgame* chessgame_parse(const char *SAN_moves)
 	return (chessgame_make(formated_SAN));
 }
 
+/*
+* Function used to get the first "halfMovesNbr" moves of a string
+* @param str the string to cut
+* @param halfMovesNbr the number of moves to get
+* @return the first "halfMovesNbr" moves of the string
+*/
 static char* cutFirstMoves(char* moves, int halfMovesNbr){
 	int	length = 0;
 	int	movesCounter = 0;
@@ -69,9 +63,9 @@ static char* cutFirstMoves(char* moves, int halfMovesNbr){
 	while (moves[length] && movesCounter < halfMovesNbr)
 	{
 		while (moves[length] == ' ')
-			length++;
+			length++; //skip spaces
 		if(!(moves[length] <= '9' && moves[length] >= '0'))
-				movesCounter++;
+				movesCounter++; 
 		while (moves[length] && moves[length] != ' ')
 			length++;
 
@@ -82,6 +76,11 @@ static char* cutFirstMoves(char* moves, int halfMovesNbr){
 	return (result);
 }
 
+/*
+* Function used to count the number of moves in a string
+* @param str the string to count
+* @return the number of moves
+*/
 static int countMoves(char* moves){
 	SCL_Record	r;
 	SCL_recordInit(r);
@@ -103,6 +102,7 @@ Datum
 chessgame_out(PG_FUNCTION_ARGS)
 {
 	chessgame	*game = (chessgame *) PG_GETARG_CHESSGAME_P(0);
+
 	char	*str;
 	if (VARDATA_ANY(game) != NULL) {
 		str = palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(game));
@@ -147,6 +147,7 @@ Datum chessgame_cast_from_text(PG_FUNCTION_ARGS)
 {  	
 	text *txt = PG_GETARG_TEXT_P(0);
 	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
+	PG_FREE_IF_COPY(txt,0);
     PG_RETURN_POINTER(chessgame_parse(str)); 
 }
 
@@ -156,6 +157,7 @@ Datum chessgame_cast_to_text(PG_FUNCTION_ARGS)
   chessgame *cg = PG_GETARG_CHESSGAME_P(0);
   text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cg) + VARHDRSZ);
   memcpy(VARDATA(result), VARDATA_ANY(cg), VARSIZE_ANY_EXHDR(cg));
+  PG_FREE_IF_COPY(cg, 0);
   PG_RETURN_CSTRING(result);
 } 
 
@@ -169,6 +171,11 @@ chessgame_constructor(PG_FUNCTION_ARGS)
 //*************************************CHESSBOARD*************************************
 
 //************INTERNAL FUNCTIONS************
+/*
+* Function used to create a chessboard from a FEN string
+* @param FEN_board the FEN string that has been allocated on stack (no malloc)
+* @return a chessboard
+*/
 static chessboard *
 chessboard_make(const char* FEN_board){
 	chessboard *cb = palloc0(VARHDRSZ + strlen(FEN_board) + 1);
@@ -179,11 +186,16 @@ chessboard_make(const char* FEN_board){
 	return cb;
 }
 
+/*
+* Function used to make sure the string is in FEN format. If true chessboard_make is called
+* @param str the string to check
+* @return a chessboard if the string is in FEN format, launches an error otherwise
+*/
 static chessboard *
 chessboard_parse(const char* FEN_board){
 	SCL_Board	sclboard;
-	if (SCL_boardFromFEN(sclboard, FEN_board) == 0)
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in FENformat")));
+	if (!FEN_board || FEN_board[0] == 0 || SCL_boardFromFEN(sclboard, FEN_board) == 0)
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("The string should be in FEN format")));
 	return(chessboard_make(FEN_board));
 }
 
@@ -242,6 +254,7 @@ Datum chessboard_cast_from_text(PG_FUNCTION_ARGS)
 {  	
 	text *txt = PG_GETARG_TEXT_P(0);
 	char *str = DatumGetCString(DirectFunctionCall1(textout,PointerGetDatum(txt)));
+	PG_FREE_IF_COPY(txt,0);
     PG_RETURN_POINTER(chessboard_parse(str)); 
 }
 
@@ -251,6 +264,7 @@ Datum chessboard_cast_to_text(PG_FUNCTION_ARGS)
   chessboard *cb = PG_GETARG_CHESSBOARD_P(0);
   text *result = (text *) palloc0(sizeof(char) * VARSIZE_ANY_EXHDR(cb) + VARHDRSZ);
   memcpy(VARDATA(result), VARDATA_ANY(cb), VARSIZE_ANY_EXHDR(cb));
+  PG_FREE_IF_COPY(cb, 0);
   PG_RETURN_CSTRING(result);
 } 
 
@@ -262,6 +276,12 @@ chessboard_constructor(PG_FUNCTION_ARGS)
 	PG_RETURN_CHESSBOARD_P(chessboard_parse(input));
 }
 //*************************************FUNCTIONS*************************************
+/*
+* Function used to get the board (in FEN format) from a chessgame at a given half-moves count
+* @param chgame the chessgame
+* @param halfMovesNbr the half-moves count
+* @return the board at the given half-moves count
+*/
 PG_FUNCTION_INFO_V1(getBoard);
 Datum
 getBoard(PG_FUNCTION_ARGS) {
@@ -279,7 +299,7 @@ getBoard(PG_FUNCTION_ARGS) {
 	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
 	else if (halfMovesNbr > SCL_recordLength(r)){
-		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Not enough moves in the game")));}
 
 	SCL_recordApply(r, board, halfMovesNbr);
 
@@ -289,6 +309,12 @@ getBoard(PG_FUNCTION_ARGS) {
 	PG_RETURN_CHESSBOARD_P(result);
 }
 
+/*
+* Function used to get the first "halfMovesNbr" moves of a chessgame
+* @param chgame the chessgame
+* @param halfMovesNbr the number of moves to get
+* @return the first "halfMovesNbr" moves of the chessgame
+*/
 PG_FUNCTION_INFO_V1(getFirstMoves);
 Datum
 getFirstMoves(PG_FUNCTION_ARGS){
@@ -300,22 +326,29 @@ getFirstMoves(PG_FUNCTION_ARGS){
 	
    	if (halfMovesNbr < 0){
 		ereport(ERROR, (errcode(ERRCODE_INVALID_PARAMETER_VALUE), errmsg("Invalid half-moves count")));}
+	else if (halfMovesNbr == 0){
+		PG_FREE_IF_COPY(chgame, 0);
+    	PG_RETURN_CHESSGAME_P(chessgame_make(strdup("1.")));
+	}
 	else if (halfMovesNbr > nb_move){
 		halfMovesNbr = nb_move;
 	}
     
 	firstMoves = cutFirstMoves(VARDATA_ANY(chgame), halfMovesNbr);
     result = chessgame_make(firstMoves);
-	//free(firstMoves);
 	PG_FREE_IF_COPY(chgame, 0);
     PG_RETURN_CHESSGAME_P(result);
 }
 
+/*
+* Function used to add the highest lexicographic order move to a chessgame (useful for hasOpening see the sql file)
+* @param chgame the chessgame
+* @return the chessgame with the highest lexicographic order move added (hxh8=R+
+*/
 PG_FUNCTION_INFO_V1(AddLastMove);
 Datum
 AddLastMove(PG_FUNCTION_ARGS){
 	chessgame *chgame = (chessgame *)PG_GETARG_CHESSGAME_P(0);
-	// the move to add is hxh8=R+ (highest lexicographic order)
 	char *modifiedGame = (char *) palloc0(VARSIZE_ANY_EXHDR(chgame) + 8);
 	chessgame *result;
 	strcpy(modifiedGame, VARDATA_ANY(chgame));
